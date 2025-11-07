@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Uploads and generated files
+backend/uploads/
+backend/generated_pdfs/
+backend/temp/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.parcel-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MongoDB
+*.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Misc
+*.bak
+*.tmp
