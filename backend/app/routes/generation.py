@@ -386,9 +386,9 @@ async def generate_document(
         raise HTTPException(status_code=400, detail="Invalid JSON in request")
 
     # Validate
-    if length < 500 or length > 5000:
+    if length < 500 or length > 10000:
         logger.warning(f"Invalid length: {length}")
-        raise HTTPException(status_code=400, detail="Length must be between 500 and 5000 words")
+        raise HTTPException(status_code=400, detail="Length must be between 500 and 10,000 words")
 
     # Handle logo upload
     logo_path = None

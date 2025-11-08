@@ -18,7 +18,7 @@ class DesignSpecRequest(BaseModel):
 
 class DocumentGenerationRequest(BaseModel):
     description: str = Field(..., min_length=10, max_length=2000)
-    length: int = Field(..., ge=500, le=5000)
+    length: int = Field(..., ge=500, le=10000)
     document_type: str = Field("infographic", pattern="^(formal|infographic)$")
     use_watermark: bool = Field(False)  # Only applicable for formal documents with logo
     statistics: List[StatisticRequest] = Field(default_factory=list, max_length=10)

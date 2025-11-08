@@ -12,8 +12,8 @@ export const validateLength = (length: number): string | null => {
   if (length < 500) {
     return 'Document length must be at least 500 words';
   }
-  if (length > 5000) {
-    return 'Document length must not exceed 5000 words';
+  if (length > 10000) {
+    return 'Document length must not exceed 10,000 words';
   }
   return null;
 };

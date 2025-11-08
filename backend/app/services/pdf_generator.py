@@ -39,13 +39,47 @@ class PDFGeneratorService:
         For FORMAL documents: 3 vertical lines of varying thickness on the right edge,
                              alternating between foreground colors
         For INFOGRAPHIC documents: No edge decorations
+        For COVER page: Solid rectangle from bottom portion to page bottom
 
         Watermark: Only added for formal documents when use_watermark=True and logo exists
         """
         canvas_obj.saveState()
 
-        # Only draw edge decorations for FORMAL documents
-        if document_type == "formal":
+        # Draw solid rectangle on cover page
+        if is_cover:
+            logger.debug("Drawing cover page solid rectangle")
+
+            # Get foreground color 1
+            r1, g1, b1 = self._hex_to_rgb(design_spec.foreground_color_1)
+
+            # Calculate rectangle position
+            # The rectangle should start lower on the page to ensure title stays above it
+            # Logo: 0.5" spacer + 4" logo + 0.5" spacer = 5"
+            # Title area: 1.5" spacer + ~1" title + 0.5" spacer + ~0.3" date + 1" spacer = ~4.3"
+            # Total from top: ~9.3", so rectangle starts at page_height - 9.3"
+            # This ensures the title and date are well above the colored rectangle
+            rectangle_top_position = self.page_height - 9.3*inch
+
+            # Height of rectangle (from position to bottom of page)
+            rectangle_height = rectangle_top_position
+
+            # Set fill color (no transparency for solid rectangle)
+            canvas_obj.setFillColorRGB(r1, g1, b1)
+
+            # Draw rectangle spanning full width, from calculated position to bottom
+            canvas_obj.rect(
+                0,  # x: start at left edge
+                0,  # y: start at bottom edge
+                self.page_width,  # width: full page width
+                rectangle_height,  # height: from bottom to calculated top position
+                fill=1,  # filled
+                stroke=0  # no border
+            )
+
+            logger.debug(f"Drew cover rectangle: width={self.page_width}, height={rectangle_height}")
+
+        # Only draw edge decorations for FORMAL documents (non-cover pages)
+        elif document_type == "formal":
             logger.debug("Drawing formal document edge decorations")
 
             # Get both foreground colors
@@ -168,8 +202,8 @@ class PDFGeneratorService:
                 # Add small spacer from top
                 elements.append(Spacer(1, 0.5*inch))
 
-                # Add logo centered at top
-                logo = Image(logo_path, width=2*inch, height=2*inch, kind='proportional')
+                # Add logo centered at top (4" x 4" - 2x bigger than original)
+                logo = Image(logo_path, width=4*inch, height=4*inch, kind='proportional')
                 logo.hAlign = 'CENTER'
                 elements.append(logo)
                 elements.append(Spacer(1, 0.5*inch))
@@ -191,14 +225,11 @@ class PDFGeneratorService:
         date_para.alignment = TA_CENTER
         elements.append(date_para)
 
-        # Add color accent bar
-        color1 = self._create_color(design_spec.foreground_color_1)
-        accent_table = Table([['']], colWidths=[6*inch], rowHeights=[0.1*inch])
-        accent_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), color1),
-        ]))
+        # Add spacer before the colored rectangle
         elements.append(Spacer(1, 1*inch))
-        elements.append(accent_table)
+
+        # Note: The solid rectangle will be drawn on the canvas during PDF generation
+        # See the add_cover_decorations callback in generate_pdf()
 
         elements.append(PageBreak())
 

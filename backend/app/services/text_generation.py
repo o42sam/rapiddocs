@@ -10,9 +10,12 @@ logger = get_logger('text_generation')
 
 class TextGenerationService:
     def __init__(self):
-        # Use Ollama local API
+        # Use local Ollama API (more reliable than deprecated HF free tier)
         self.api_url = "http://localhost:11434/api/generate"
-        self.model = "gemma:2b"  # Smaller, faster model for resource-constrained systems
+        self.model = "gemma:2b"  # Fast, efficient local model
+
+        logger.info(f"Initialized TextGenerationService with local Ollama model: {self.model}")
+        logger.debug(f"API URL: {self.api_url}")
 
     def _format_statistics(self, statistics: List[Statistic]) -> str:
         """Format statistics for inclusion in prompt"""
@@ -78,6 +81,7 @@ Generate the document now:"""
             prompt = self._build_prompt(description, word_count, statistics)
             logger.debug(f"Prompt length: {len(prompt)} characters")
 
+            # Ollama API payload
             payload = {
                 "model": self.model,
                 "prompt": prompt,
@@ -85,13 +89,14 @@ Generate the document now:"""
                 "options": {
                     "temperature": 0.7,
                     "top_p": 0.95,
-                    "num_predict": min(int(word_count * 1.2), 2000)  # Limit output to prevent long generation
+                    "num_predict": int(word_count * 2.0),  # Scale tokens with word count
                 }
             }
 
             for attempt in range(max_retries):
                 try:
                     logger.debug(f"Text generation attempt {attempt + 1}/{max_retries}")
+                    logger.debug(f"Sending request to: {self.api_url}")
 
                     response = requests.post(
                         self.api_url,
@@ -99,9 +104,14 @@ Generate the document now:"""
                         timeout=600  # 10 minutes timeout for local generation
                     )
 
+                    logger.debug(f"Response status: {response.status_code}")
+
                     response.raise_for_status()
                     result = response.json()
 
+                    logger.debug(f"Response type: {type(result)}")
+
+                    # Ollama returns response in "response" field
                     generated_text = result.get("response", "")
 
                     # Clean up the text
