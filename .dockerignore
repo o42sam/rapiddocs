@@ -1,0 +1,54 @@
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/venv
+**/env
+**/ENV
+**/*.egg-info
+**/.pytest_cache
+**/.coverage
+
+# Node
+**/node_modules
+**/npm-debug.log
+**/yarn-error.log
+**/.npm
+
+# Environment files
+**/.env
+**/.env.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/logs
+**/*.log
+
+# Test files
+backend/test_*.py
+
+# Development files
+backend/uploads/*
+backend/generated_pdfs/*
+
+# Documentation
+*.md
+!README.md
+
+# Scripts
+*.sh

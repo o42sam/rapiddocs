@@ -10,11 +10,22 @@ logger = get_logger('text_generation')
 
 class TextGenerationService:
     def __init__(self):
-        # Use local Ollama API (more reliable than deprecated HF free tier)
-        self.api_url = "http://localhost:11434/api/generate"
-        self.model = "gemma:2b"  # Fast, efficient local model
+        # Check if HuggingFace API key is available (production) or use Ollama (local dev)
+        self.use_huggingface = bool(settings.HUGGINGFACE_API_KEY and settings.HUGGINGFACE_API_KEY != "your-token-here")
 
-        logger.info(f"Initialized TextGenerationService with local Ollama model: {self.model}")
+        if self.use_huggingface:
+            # Production: Use HuggingFace API
+            self.api_url = "https://api-inference.huggingface.co/models/" + settings.TEXT_GENERATION_MODEL
+            self.model = settings.TEXT_GENERATION_MODEL
+            self.headers = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
+            logger.info(f"Initialized TextGenerationService with HuggingFace API: {self.model}")
+        else:
+            # Development: Use local Ollama API
+            self.api_url = "http://localhost:11434/api/generate"
+            self.model = "gemma:2b"
+            self.headers = {}
+            logger.info(f"Initialized TextGenerationService with local Ollama: {self.model}")
+
         logger.debug(f"API URL: {self.api_url}")
 
     def _format_statistics(self, statistics: List[Statistic]) -> str:
@@ -81,17 +92,30 @@ Generate the document now:"""
             prompt = self._build_prompt(description, word_count, statistics)
             logger.debug(f"Prompt length: {len(prompt)} characters")
 
-            # Ollama API payload
-            payload = {
-                "model": self.model,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.7,
-                    "top_p": 0.95,
-                    "num_predict": int(word_count * 2.0),  # Scale tokens with word count
+            # Prepare payload based on API type
+            if self.use_huggingface:
+                # HuggingFace API payload
+                payload = {
+                    "inputs": prompt,
+                    "parameters": {
+                        "max_new_tokens": int(word_count * 2.0),
+                        "temperature": 0.7,
+                        "top_p": 0.95,
+                        "return_full_text": False
+                    }
                 }
-            }
+            else:
+                # Ollama API payload
+                payload = {
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "top_p": 0.95,
+                        "num_predict": int(word_count * 2.0),
+                    }
+                }
 
             for attempt in range(max_retries):
                 try:
@@ -101,7 +125,8 @@ Generate the document now:"""
                     response = requests.post(
                         self.api_url,
                         json=payload,
-                        timeout=600  # 10 minutes timeout for local generation
+                        headers=self.headers,
+                        timeout=600  # 10 minutes timeout
                     )
 
                     logger.debug(f"Response status: {response.status_code}")
@@ -111,8 +136,16 @@ Generate the document now:"""
 
                     logger.debug(f"Response type: {type(result)}")
 
-                    # Ollama returns response in "response" field
-                    generated_text = result.get("response", "")
+                    # Extract generated text based on API type
+                    if self.use_huggingface:
+                        # HuggingFace returns array with generated_text
+                        if isinstance(result, list) and len(result) > 0:
+                            generated_text = result[0].get("generated_text", "")
+                        else:
+                            generated_text = result.get("generated_text", "")
+                    else:
+                        # Ollama returns response in "response" field
+                        generated_text = result.get("response", "")
 
                     # Clean up the text
                     generated_text = generated_text.strip()

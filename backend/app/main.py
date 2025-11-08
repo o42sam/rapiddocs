@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import os
 
@@ -53,15 +54,41 @@ app.include_router(generation.router, prefix=settings.API_PREFIX, tags=["generat
 app.include_router(upload.router, prefix=settings.API_PREFIX, tags=["upload"])
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Document Generator API",
-        "version": "1.0.0",
-        "docs": f"{settings.API_PREFIX}/docs"
-    }
-
-
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+# Serve frontend static files (for production deployment)
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    # Mount static assets
+    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+
+    # Serve index.html for all other routes (SPA routing)
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # If it's an API route, let it pass through
+        if full_path.startswith("api/"):
+            return {"error": "Not found"}
+
+        # Check if file exists in static directory
+        file_path = os.path.join(static_dir, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+
+        # Otherwise serve index.html (for SPA routing)
+        index_path = os.path.join(static_dir, "index.html")
+        if os.path.isfile(index_path):
+            return FileResponse(index_path)
+
+        return {"error": "Not found"}
+else:
+    # Fallback for development mode
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Document Generator API",
+            "version": "1.0.0",
+            "docs": f"{settings.API_PREFIX}/docs"
+        }
