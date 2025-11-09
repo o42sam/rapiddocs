@@ -32,12 +32,20 @@ async def connect_to_mongo():
         print(f"Python SSL version: {ssl.OPENSSL_VERSION}")
         print(f"Certifi CA bundle location: {certifi.where()}")
 
-        # MongoDB Atlas connection with minimal TLS configuration
-        # Let pymongo handle SSL/TLS automatically with srv connection
+        # MongoDB Atlas connection with explicit SSL/TLS configuration
+        # Create SSL context for compatibility
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        ssl_context.check_hostname = True
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        # Set minimum TLS version to 1.2 (required by MongoDB Atlas)
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        # Allow broader cipher suite for compatibility
+        ssl_context.set_ciphers('DEFAULT@SECLEVEL=1')
+
         db.client = AsyncIOMotorClient(
             settings.MONGODB_URL,
             serverSelectionTimeoutMS=30000,
-            # Use default SSL/TLS settings - pymongo handles this automatically for mongodb+srv://
+            ssl_context=ssl_context,
             retryWrites=True,
             w='majority'
         )

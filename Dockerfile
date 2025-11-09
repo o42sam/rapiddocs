@@ -19,7 +19,8 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Setup backend
-FROM python:3.11-slim
+# Use Python 3.10 with stable OpenSSL 1.1.1 for MongoDB Atlas compatibility
+FROM python:3.10-slim-bullseye
 
 # Install system dependencies including SSL certificates and OpenSSL
 RUN apt-get update && apt-get install -y \
