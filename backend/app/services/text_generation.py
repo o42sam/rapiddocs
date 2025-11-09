@@ -14,11 +14,13 @@ class TextGenerationService:
         self.use_huggingface = bool(settings.HUGGINGFACE_API_KEY and settings.HUGGINGFACE_API_KEY != "your-token-here")
 
         if self.use_huggingface:
-            # Production: Use HuggingFace API
-            self.api_url = "https://api-inference.huggingface.co/models/" + settings.TEXT_GENERATION_MODEL
+            # Production: Use HuggingFace Inference Router (new endpoint)
+            # Old: https://api-inference.huggingface.co/models/{model}
+            # New: https://router.huggingface.co/hf-inference/{model}
+            self.api_url = "https://router.huggingface.co/hf-inference/" + settings.TEXT_GENERATION_MODEL
             self.model = settings.TEXT_GENERATION_MODEL
             self.headers = {"Authorization": f"Bearer {settings.HUGGINGFACE_API_KEY}"}
-            logger.info(f"Initialized TextGenerationService with HuggingFace API: {self.model}")
+            logger.info(f"Initialized TextGenerationService with HuggingFace Router API: {self.model}")
         else:
             # Development: Use local Ollama API
             self.api_url = "http://localhost:11434/api/generate"
