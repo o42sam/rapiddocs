@@ -131,6 +131,12 @@ Generate the document now:"""
 
                     logger.debug(f"Response status: {response.status_code}")
 
+                    # Log response body for debugging 410 errors
+                    if response.status_code == 410:
+                        logger.error(f"HuggingFace returned 410 Gone")
+                        logger.error(f"Response headers: {dict(response.headers)}")
+                        logger.error(f"Response body: {response.text}")
+
                     response.raise_for_status()
                     result = response.json()
 
