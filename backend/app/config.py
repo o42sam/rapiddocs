@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
+    # Authentication / JWT
+    JWT_SECRET_KEY: str = "your-secret-key-here-change-in-production"
+    JWT_REFRESH_SECRET_KEY: str = "your-refresh-secret-key-here-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # 30 days
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

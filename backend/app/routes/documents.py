@@ -1,18 +1,23 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from bson import ObjectId
 from app.database import get_database
 from app.schemas.request import DocumentResponse
+from app.models.user import User
+from app.utils.dependencies import get_current_active_user
 
 router = APIRouter()
 
 
 @router.get("/documents", response_model=List[DocumentResponse])
-async def list_documents():
-    """List all generated documents"""
+async def list_documents(current_user: User = Depends(get_current_active_user)):
+    """List all generated documents for the authenticated user"""
     db = get_database()
 
-    documents = await db.documents.find().sort("created_at", -1).limit(50).to_list(50)
+    # Filter documents by user_id
+    documents = await db.documents.find(
+        {"user_id": str(current_user.id)}
+    ).sort("created_at", -1).limit(50).to_list(50)
 
     return [
         DocumentResponse(
@@ -30,12 +35,15 @@ async def list_documents():
 
 
 @router.get("/documents/{doc_id}", response_model=DocumentResponse)
-async def get_document(doc_id: str):
-    """Get document by ID"""
+async def get_document(doc_id: str, current_user: User = Depends(get_current_active_user)):
+    """Get document by ID (only if owned by current user)"""
     db = get_database()
 
     try:
-        doc = await db.documents.find_one({"_id": ObjectId(doc_id)})
+        doc = await db.documents.find_one({
+            "_id": ObjectId(doc_id),
+            "user_id": str(current_user.id)
+        })
     except:
         raise HTTPException(status_code=400, detail="Invalid document ID")
 
@@ -55,12 +63,15 @@ async def get_document(doc_id: str):
 
 
 @router.delete("/documents/{doc_id}")
-async def delete_document(doc_id: str):
-    """Delete document"""
+async def delete_document(doc_id: str, current_user: User = Depends(get_current_active_user)):
+    """Delete document (only if owned by current user)"""
     db = get_database()
 
     try:
-        result = await db.documents.delete_one({"_id": ObjectId(doc_id)})
+        result = await db.documents.delete_one({
+            "_id": ObjectId(doc_id),
+            "user_id": str(current_user.id)
+        })
     except:
         raise HTTPException(status_code=400, detail="Invalid document ID")
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Form, UploadFile, File
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Form, UploadFile, File, Depends
 from fastapi.responses import FileResponse
 from typing import Optional, List
 from bson import ObjectId
@@ -9,6 +9,8 @@ import json
 import os
 
 from app.database import get_database
+from app.models.user import User
+from app.utils.dependencies import get_current_active_user
 from app.schemas.request import (
     DocumentGenerationRequest,
     GenerationJobResponse,
@@ -348,7 +350,8 @@ async def generate_document(
     use_watermark: bool = Form(False),  # Whether to use logo as watermark (formal only)
     statistics: str = Form(...),  # JSON string
     design_spec: str = Form(...),  # JSON string
-    logo: Optional[UploadFile] = File(None)
+    logo: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Generate a new document
@@ -412,8 +415,9 @@ async def generate_document(
     )
     logger.info(f"Created document config with {len(stats_data)} statistics, watermark={use_watermark}")
 
-    # Create document
+    # Create document with user_id
     document = Document(
+        user_id=str(current_user.id),
         description=description,
         title="Generating...",
         status="pending",
@@ -449,8 +453,11 @@ async def generate_document(
 
 
 @router.get("/generate/status/{job_id}", response_model=JobStatusResponse)
-async def get_generation_status(job_id: str):
-    """Get generation job status"""
+async def get_generation_status(
+    job_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get generation job status (only for user's own jobs)"""
     db = get_database()
 
     try:
@@ -459,6 +466,11 @@ async def get_generation_status(job_id: str):
         raise HTTPException(status_code=400, detail="Invalid job ID")
 
     if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Verify the job belongs to the current user
+    doc = await db.documents.find_one({"_id": job["document_id"]})
+    if not doc or doc.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=404, detail="Job not found")
 
     return JobStatusResponse(
@@ -472,8 +484,11 @@ async def get_generation_status(job_id: str):
 
 
 @router.get("/generate/download/{job_id}")
-async def download_document(job_id: str):
-    """Download generated PDF"""
+async def download_document(
+    job_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Download generated PDF (only for user's own documents)"""
     db = get_database()
 
     try:
@@ -492,7 +507,10 @@ async def download_document(job_id: str):
     if isinstance(doc_id, str):
         doc_id = ObjectId(doc_id)
 
-    doc = await db.documents.find_one({"_id": doc_id})
+    doc = await db.documents.find_one({
+        "_id": doc_id,
+        "user_id": str(current_user.id)
+    })
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 

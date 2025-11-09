@@ -7,7 +7,7 @@ import os
 
 from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
-from app.routes import documents, generation, upload
+from app.routes import documents, generation, upload, auth
 
 # Debug: Print environment variables at startup
 print("=" * 50)
@@ -67,6 +67,7 @@ if os.path.exists(settings.PDF_OUTPUT_DIR):
     app.mount("/pdfs", StaticFiles(directory=settings.PDF_OUTPUT_DIR), name="pdfs")
 
 # Include routers
+app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["authentication"])
 app.include_router(documents.router, prefix=settings.API_PREFIX, tags=["documents"])
 app.include_router(generation.router, prefix=settings.API_PREFIX, tags=["generation"])
 app.include_router(upload.router, prefix=settings.API_PREFIX, tags=["upload"])
