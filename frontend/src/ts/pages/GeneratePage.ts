@@ -18,8 +18,8 @@ export class GeneratePage {
         <!-- Logo at top left -->
         <div class="fixed top-0 left-0 right-0 bg-gray-50 z-50">
           <div class="px-4 sm:px-6 lg:px-8 py-3">
-            <a href="/" class="inline-block hover:opacity-80 transition-opacity">
-              <img src="/logo.png" alt="RapidDocs" class="h-16 w-auto" />
+            <a href="/" class="inline-block hover:opacity-80 transition-opacity" style="margin-top: 2rem;">
+              <img src="/logo.png" alt="RapidDocs" class="h-30 w-auto" style="height: 7.5rem;" />
             </a>
           </div>
         </div>
