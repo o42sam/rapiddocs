@@ -27,8 +27,8 @@ export class Navigation {
         <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <div class="flex-shrink-0">
-            <a href="/" class="text-2xl font-bold gradient-primary bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-              DocGen
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity" data-route="/">
+              <img src="/logo.png" alt="RapidDocs" class="h-10 w-auto" />
             </a>
           </div>
 
