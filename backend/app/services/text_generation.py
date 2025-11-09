@@ -111,14 +111,20 @@ Generate the document now:"""
                     if self.use_huggingface and self.hf_client:
                         logger.debug(f"Using HuggingFace InferenceClient for model: {self.model}")
 
-                        generated_text = self.hf_client.text_generation(
-                            prompt=prompt,
+                        # Use chat completions API (2025 recommended for generative models)
+                        # This supports conversational models like Llama, Mistral, etc.
+                        response = self.hf_client.chat.completions.create(
                             model=self.model,
-                            max_new_tokens=int(word_count * 2.0),
+                            messages=[
+                                {"role": "user", "content": prompt}
+                            ],
+                            max_tokens=int(word_count * 2.0),
                             temperature=0.7,
-                            top_p=0.95,
-                            return_full_text=False
+                            top_p=0.95
                         )
+
+                        # Extract text from chat completion response
+                        generated_text = response.choices[0].message.content
 
                         logger.debug(f"Response type: {type(generated_text)}")
 
