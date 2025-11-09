@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # Hugging Face
     HUGGINGFACE_API_KEY: str = ""
-    TEXT_GENERATION_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.2"
+    TEXT_GENERATION_MODEL: str = "meta-llama/Llama-3.2-3B-Instruct"
     IMAGE_GENERATION_MODEL: str = "black-forest-labs/FLUX.1-schnell"
 
     # File Storage
