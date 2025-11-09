@@ -262,6 +262,7 @@ export class GeneratePage {
 
     this.attachEventListeners();
     this.setupGenerationListener();
+    this.restoreFormData();
   }
 
   private attachEventListeners(): void {
@@ -282,10 +283,29 @@ export class GeneratePage {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
+
+          // Save form data before redirecting
+          this.saveFormData();
+
           router.navigate('/login');
           return false;
         }
       }, true); // Use capture phase to intercept before DocumentForm
+    }
+
+    // Auto-save form data on input changes
+    if (form) {
+      form.addEventListener('input', () => {
+        if (!authState.isAuthenticated) {
+          this.saveFormData();
+        }
+      });
+
+      form.addEventListener('change', () => {
+        if (!authState.isAuthenticated) {
+          this.saveFormData();
+        }
+      });
     }
 
     // Handle route navigation from warning message
@@ -353,6 +373,68 @@ export class GeneratePage {
     const modal = document.getElementById('auth-required-modal');
     if (modal) {
       modal.classList.add('hidden');
+    }
+  }
+
+  private saveFormData(): void {
+    const form = document.getElementById('document-form') as HTMLFormElement;
+    if (!form) return;
+
+    const formData: any = {
+      description: (document.getElementById('description') as HTMLTextAreaElement)?.value || '',
+      length: (document.getElementById('length') as HTMLInputElement)?.value || '2000',
+      documentType: (document.querySelector('input[name="document_type"]:checked') as HTMLInputElement)?.value || 'infographic',
+      useWatermark: (document.getElementById('use-watermark') as HTMLInputElement)?.checked || false,
+    };
+
+    // Save to sessionStorage
+    sessionStorage.setItem('generate_form_data', JSON.stringify(formData));
+    console.log('Form data saved to sessionStorage');
+  }
+
+  private restoreFormData(): void {
+    // Only restore if user just logged in
+    const savedData = sessionStorage.getItem('generate_form_data');
+    if (!savedData) return;
+
+    try {
+      const formData = JSON.parse(savedData);
+      console.log('Restoring form data:', formData);
+
+      // Restore description
+      const descriptionField = document.getElementById('description') as HTMLTextAreaElement;
+      if (descriptionField && formData.description) {
+        descriptionField.value = formData.description;
+      }
+
+      // Restore length
+      const lengthField = document.getElementById('length') as HTMLInputElement;
+      if (lengthField && formData.length) {
+        lengthField.value = formData.length;
+      }
+
+      // Restore document type
+      if (formData.documentType) {
+        const typeRadio = document.querySelector(`input[name="document_type"][value="${formData.documentType}"]`) as HTMLInputElement;
+        if (typeRadio) {
+          typeRadio.checked = true;
+        }
+      }
+
+      // Restore watermark checkbox
+      const watermarkCheckbox = document.getElementById('use-watermark') as HTMLInputElement;
+      if (watermarkCheckbox && formData.useWatermark !== undefined) {
+        watermarkCheckbox.checked = formData.useWatermark;
+      }
+
+      // Clear the saved data after successful restoration
+      if (authState.isAuthenticated) {
+        sessionStorage.removeItem('generate_form_data');
+        console.log('Form data restored and cleared from sessionStorage');
+      }
+    } catch (error) {
+      console.error('Failed to restore form data:', error);
+      sessionStorage.removeItem('generate_form_data');
     }
   }
 
