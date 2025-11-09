@@ -28,7 +28,7 @@ export class Navigation {
           <!-- Logo -->
           <div class="flex-shrink-0">
             <a href="/" class="flex items-center hover:opacity-80 transition-opacity" data-route="/">
-              <img src="/logo.png" alt="RapidDocs" class="h-10 w-auto" />
+              <img src="/logo.png" alt="RapidDocs" class="h-30 w-auto" style="height: 7.5rem;" />
             </a>
           </div>
 
