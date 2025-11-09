@@ -1,4 +1,4 @@
-import { router, createLink } from '../router';
+import { router } from '../router';
 import { authState } from '../auth/authState';
 import { authService } from '../auth/authService';
 
@@ -12,7 +12,7 @@ export class Navigation {
     this.attachEventListeners();
 
     // Subscribe to auth state changes
-    authState.subscribe((isAuthenticated) => {
+    authState.subscribe(() => {
       this.render();
     });
   }

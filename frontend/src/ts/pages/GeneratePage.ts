@@ -3,7 +3,6 @@ import { authState } from '../auth/authState';
 import { DocumentForm } from '../components/DocumentForm';
 
 export class GeneratePage {
-  private documentForm: DocumentForm | null = null;
   private generatedDocumentId: string | null = null;
 
   render(): void {
@@ -89,7 +88,7 @@ export class GeneratePage {
     if (formContainer) {
       // Use the existing DocumentForm component if it exists
       try {
-        this.documentForm = new DocumentForm('document-form-container');
+        new DocumentForm('document-form-container');
       } catch (error) {
         console.error('Failed to initialize document form:', error);
         formContainer.innerHTML = `
