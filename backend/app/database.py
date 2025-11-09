@@ -1,4 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.server_api import ServerApi
 from app.config import settings
 import ssl
 import certifi
@@ -32,10 +33,11 @@ async def connect_to_mongo():
         print(f"Python SSL version: {ssl.OPENSSL_VERSION}")
         print(f"Certifi CA bundle location: {certifi.where()}")
 
-        # MongoDB Atlas connection - let pymongo auto-handle TLS with srv://
-        # mongodb+srv:// automatically enables TLS
+        # MongoDB Atlas connection with Stable API v1
+        # This is required by newer MongoDB Atlas clusters
         db.client = AsyncIOMotorClient(
             settings.MONGODB_URL,
+            server_api=ServerApi('1'),
             serverSelectionTimeoutMS=30000
         )
 
