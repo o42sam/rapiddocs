@@ -66,7 +66,7 @@ class Router {
 
   getParams(): Record<string, string> {
     const params: Record<string, string> = {};
-    const route = this.routes.find(r => {
+    this.routes.find(r => {
       const routeParts = r.path.split('/');
       const pathParts = this.currentPath.split('/');
       if (routeParts.length !== pathParts.length) return false;

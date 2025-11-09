@@ -3,8 +3,6 @@ import { authState } from '../auth/authState';
 import { DocumentForm } from '../components/DocumentForm';
 
 export class GeneratePage {
-  private generatedDocumentId: string | null = null;
-
   render(): void {
     const app = document.getElementById('app');
     if (!app) return;
@@ -145,8 +143,8 @@ export class GeneratePage {
     // Listen for document generation completion
     // This would be triggered by the DocumentForm component
     window.addEventListener('document-generated', ((e: CustomEvent) => {
-      const { documentId } = e.detail;
-      this.generatedDocumentId = documentId;
+      // Document has been generated
+      console.log('Document generated:', e.detail.documentId);
 
       // If user is not authenticated, show the auth modal
       if (!authState.isAuthenticated) {
