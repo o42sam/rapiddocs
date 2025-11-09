@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     DISABLE_MONGODB: bool = False
 
     # Hugging Face
-    HUGGINGFACE_API_KEY: str
+    HUGGINGFACE_API_KEY: str = ""
     TEXT_GENERATION_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.2"
     IMAGE_GENERATION_MODEL: str = "black-forest-labs/FLUX.1-schnell"
 
