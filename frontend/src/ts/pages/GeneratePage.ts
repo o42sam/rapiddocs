@@ -7,9 +7,24 @@ export class GeneratePage {
     const app = document.getElementById('app');
     if (!app) return;
 
+    // Hide navigation
+    const navContainer = document.getElementById('nav-container');
+    if (navContainer) {
+      navContainer.style.display = 'none';
+    }
+
     app.innerHTML = `
-      <div class="min-h-screen bg-gray-50 pt-20 pb-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="min-h-screen bg-gray-50 pb-12">
+        <!-- Logo at top left -->
+        <div class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+          <div class="px-4 sm:px-6 lg:px-8 py-3">
+            <a href="/" class="inline-block hover:opacity-80 transition-opacity">
+              <img src="/logo.png" alt="RapidDocs" class="h-16 w-auto" />
+            </a>
+          </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
           <!-- Page Header -->
           <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-900 mb-2">Generate Your Document</h1>
@@ -250,6 +265,15 @@ export class GeneratePage {
   }
 
   private attachEventListeners(): void {
+    // Handle logo click to go home
+    const logoLink = document.querySelector('a[href="/"]');
+    if (logoLink) {
+      logoLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        router.navigate('/');
+      });
+    }
+
     // Handle route navigation from warning message
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
@@ -319,6 +343,12 @@ export class GeneratePage {
   }
 
   destroy(): void {
+    // Show navigation again when leaving the page
+    const navContainer = document.getElementById('nav-container');
+    if (navContainer) {
+      navContainer.style.display = '';
+    }
+
     // Cleanup if needed
     window.removeEventListener('document-generated', this.setupGenerationListener);
   }

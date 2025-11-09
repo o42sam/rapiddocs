@@ -6,47 +6,78 @@ import { authService } from './auth/authService';
 // Setup axios interceptors for authentication
 authService.setupAxiosInterceptors();
 
+// Track current page for cleanup
+let currentPage: any = null;
+
 // Register routes
 router.register('/', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { HomePage } = await import('./pages/HomePage');
   const page = new HomePage();
   page.render();
+  currentPage = page;
 });
 
 router.register('/generate', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { GeneratePage } = await import('./pages/GeneratePage');
   const page = new GeneratePage();
   page.render();
+  currentPage = page;
 });
 
 router.register('/login', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { LoginPage } = await import('./pages/LoginPage');
   const page = new LoginPage();
   page.render();
+  currentPage = page;
 });
 
 router.register('/register', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { RegisterPage } = await import('./pages/RegisterPage');
   const page = new RegisterPage();
   page.render();
+  currentPage = page;
 });
 
 router.register('/about/developer', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { AboutDeveloperPage } = await import('./pages/AboutDeveloperPage');
   const page = new AboutDeveloperPage();
   page.render();
+  currentPage = page;
 });
 
 router.register('/about/product', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { AboutProductPage } = await import('./pages/AboutProductPage');
   const page = new AboutProductPage();
   page.render();
+  currentPage = page;
 });
 
 router.register('/pricing', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
   const { PricingPage } = await import('./pages/PricingPage');
   const page = new PricingPage();
   page.render();
+  currentPage = page;
 });
 
 // Initialize the application
