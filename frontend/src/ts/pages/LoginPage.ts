@@ -8,7 +8,7 @@ export class LoginPage {
     if (!app) return;
 
     app.innerHTML = `
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-16 pb-12 px-4 sm:px-6 lg:px-8">
+      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-32 pb-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8">
           <!-- Header -->
           <div class="text-center">
