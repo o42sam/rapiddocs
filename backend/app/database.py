@@ -19,19 +19,20 @@ async def connect_to_mongo():
         print(f"Attempting to connect to MongoDB...")
         print(f"Database name: {settings.MONGODB_DB_NAME}")
 
-        # Create SSL context with proper certificate handling using certifi
-        ssl_context = ssl.create_default_context(cafile=certifi.where())
-        ssl_context.check_hostname = True
-        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        # Check if using mongodb+srv:// format
+        is_srv = settings.MONGODB_URL.startswith("mongodb+srv://")
+        print(f"Using SRV connection: {is_srv}")
+        print(f"Python SSL version: {ssl.OPENSSL_VERSION}")
+        print(f"Certifi CA bundle location: {certifi.where()}")
 
-        # Connect to MongoDB Atlas with TLS/SSL configuration
+        # MongoDB Atlas connection with minimal TLS configuration
+        # Let pymongo handle SSL/TLS automatically with srv connection
         db.client = AsyncIOMotorClient(
             settings.MONGODB_URL,
             serverSelectionTimeoutMS=30000,
-            tls=True,
-            tlsCAFile=certifi.where(),
-            tlsAllowInvalidCertificates=False,
-            tlsAllowInvalidHostnames=False
+            # Use default SSL/TLS settings - pymongo handles this automatically for mongodb+srv://
+            retryWrites=True,
+            w='majority'
         )
 
         # Test the connection

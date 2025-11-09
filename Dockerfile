@@ -21,7 +21,7 @@ RUN npm run build
 # Stage 2: Setup backend
 FROM python:3.11-slim
 
-# Install system dependencies including SSL certificates
+# Install system dependencies including SSL certificates and OpenSSL
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     python3-dev \
     ca-certificates \
+    libssl-dev \
+    openssl \
     && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates
 
@@ -55,6 +57,7 @@ EXPOSE 8000
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
+ENV OPENSSL_CONF=/etc/ssl/
 
 # Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
