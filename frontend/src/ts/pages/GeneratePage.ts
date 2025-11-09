@@ -16,7 +16,7 @@ export class GeneratePage {
     app.innerHTML = `
       <div class="min-h-screen bg-gray-50 pb-12">
         <!-- Logo at top left -->
-        <div class="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+        <div class="fixed top-0 left-0 right-0 bg-gray-50 z-50">
           <div class="px-4 sm:px-6 lg:px-8 py-3">
             <a href="/" class="inline-block hover:opacity-80 transition-opacity">
               <img src="/logo.png" alt="RapidDocs" class="h-16 w-auto" />

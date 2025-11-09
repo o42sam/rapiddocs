@@ -21,7 +21,7 @@ export class Navigation {
     const isAuthenticated = authState.isAuthenticated;
     const user = authState.user;
 
-    this.element.className = 'fixed top-0 left-0 right-0 bg-white shadow-md z-50 nav-fade-in';
+    this.element.className = 'fixed top-0 left-0 right-0 bg-gray-50 z-50 nav-fade-in';
     this.element.innerHTML = `
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
