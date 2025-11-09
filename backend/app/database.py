@@ -15,6 +15,13 @@ db = Database()
 
 async def connect_to_mongo():
     """Connect to MongoDB Atlas"""
+    # Check if MongoDB is explicitly disabled or URL is empty
+    if settings.DISABLE_MONGODB or not settings.MONGODB_URL:
+        print("⚠ MongoDB is disabled or not configured")
+        print("⚠ Application will run in demo mode (without persistence)")
+        db.connected = False
+        return
+
     try:
         print(f"Attempting to connect to MongoDB...")
         print(f"Database name: {settings.MONGODB_DB_NAME}")

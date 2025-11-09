@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api/v1"
 
     # MongoDB Atlas
-    MONGODB_URL: str
+    MONGODB_URL: str = ""
     MONGODB_DB_NAME: str = "docgen"
+    DISABLE_MONGODB: bool = False
 
     # Hugging Face
     HUGGINGFACE_API_KEY: str
