@@ -9,6 +9,24 @@ from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
 from app.routes import documents, generation, upload
 
+# Debug: Print environment variables at startup
+print("=" * 50)
+print("ENVIRONMENT VARIABLES DEBUG")
+print("=" * 50)
+print(f"MONGODB_URL: {'SET' if settings.MONGODB_URL else 'NOT SET'} (length: {len(settings.MONGODB_URL)})")
+print(f"MONGODB_DB_NAME: {settings.MONGODB_DB_NAME}")
+print(f"DISABLE_MONGODB: {settings.DISABLE_MONGODB}")
+print(f"HUGGINGFACE_API_KEY: {'SET' if settings.HUGGINGFACE_API_KEY else 'NOT SET'} (length: {len(settings.HUGGINGFACE_API_KEY)})")
+print(f"APP_ENV: {settings.APP_ENV}")
+print(f"DEBUG: {settings.DEBUG}")
+print("=" * 50)
+
+# Also check raw environment variables
+print("RAW OS ENVIRONMENT VARIABLES:")
+print(f"os.environ.get('MONGODB_URL'): {'SET' if os.environ.get('MONGODB_URL') else 'NOT SET'}")
+print(f"os.environ.get('HUGGINGFACE_API_KEY'): {'SET' if os.environ.get('HUGGINGFACE_API_KEY') else 'NOT SET'}")
+print("=" * 50)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
