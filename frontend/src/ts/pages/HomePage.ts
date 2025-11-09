@@ -143,27 +143,6 @@ export class HomePage {
           </div>
         </div>
       </section>
-
-      <!-- Pricing Section -->
-      <section id="pricing" class="py-20 bg-white">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-16" data-animate>
-            <div class="flex items-center justify-center mb-4">
-              <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Simple Pricing</h2>
-            <p class="text-xl text-gray-600">Choose the plan that works for you</p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            ${this.renderPricingCard('Free', '0', ['5 documents/month', 'Basic templates', 'Standard quality', 'Email support'], false, 'M13 10V3L4 14h7v7l9-11h-7z', 'blue')}
-            ${this.renderPricingCard('Pro', '29', ['Unlimited documents', 'All templates', 'High quality', 'Priority support', 'Custom branding', 'API access'], true, 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z', 'purple')}
-            ${this.renderPricingCard('Enterprise', '99', ['Everything in Pro', 'Dedicated support', 'Custom integrations', 'SLA guarantee', 'Team management', 'Advanced analytics'], false, 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 'indigo')}
-          </div>
-        </div>
-      </section>
     `;
 
     // Mount hero
@@ -186,39 +165,6 @@ export class HomePage {
         </div>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">${title}</h3>
         <p class="text-gray-600">${description}</p>
-      </div>
-    `;
-  }
-
-  private renderPricingCard(name: string, price: string, features: string[], highlighted: boolean, iconPath: string, color: string): string {
-    return `
-      <div class="bg-white rounded-xl shadow-lg ${highlighted ? 'ring-2 ring-blue-600 transform scale-105' : ''} p-8 card-hover" data-animate>
-        ${highlighted ? '<div class="text-center text-blue-600 font-semibold mb-4">MOST POPULAR</div>' : ''}
-        <div class="text-center mb-8">
-          <div class="w-16 h-16 bg-${color}-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-${color}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}" />
-            </svg>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">${name}</h3>
-          <div class="text-5xl font-bold text-gray-900">
-            $${price}
-            <span class="text-lg text-gray-600">/mo</span>
-          </div>
-        </div>
-        <ul class="space-y-4 mb-8">
-          ${features.map(feature => `
-            <li class="flex items-start">
-              <svg class="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="text-gray-600">${feature}</span>
-            </li>
-          `).join('')}
-        </ul>
-        <button class="${highlighted ? 'btn-primary' : 'btn-outline text-blue-600'} w-full">
-          Get Started
-        </button>
       </div>
     `;
   }

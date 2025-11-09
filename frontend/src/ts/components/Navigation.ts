@@ -54,10 +54,6 @@ export class Navigation {
               </div>
             </div>
 
-            <a href="/" data-scroll="pricing" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-              Pricing
-            </a>
-
             ${isAuthenticated ? `
               <a href="/generate" class="text-gray-700 hover:text-blue-600 font-medium transition-colors" data-route="/generate">
                 Generate
@@ -112,10 +108,6 @@ export class Navigation {
                 Product
               </a>
             </div>
-
-            <a href="/" data-scroll="pricing" class="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md font-medium transition-colors">
-              Pricing
-            </a>
 
             ${isAuthenticated ? `
               <a href="/generate" class="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md font-medium transition-colors" data-route="/generate">
