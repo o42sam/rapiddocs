@@ -17,7 +17,7 @@ export class Hero {
           <!-- Main Heading -->
           <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 hero-title-fade">
             Transform Your Ideas Into
-            <span class="gradient-primary bg-clip-text text-transparent">
+            <span class="block mt-2 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent font-extrabold">
               Professional Documents
             </span>
           </h1>

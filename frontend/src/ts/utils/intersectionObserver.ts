@@ -24,7 +24,6 @@ export class ScrollAnimationObserver {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
-            entry.target.classList.remove('fade-in-bottom');
 
             if (onIntersect) {
               onIntersect(entry);
