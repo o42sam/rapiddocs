@@ -1,6 +1,26 @@
-# Deployment Guide for Sevalla (or any Docker-based platform)
+# Deployment Guide
 
-This guide will help you deploy the Document Generator application to Sevalla or any other Docker-based hosting platform.
+This guide will help you deploy the Document Generator application to production.
+
+## Recommended Platform: Railway
+
+**Railway is the recommended deployment platform** for this application due to excellent MongoDB Atlas support and seamless TLS/SSL connectivity.
+
+### Quick Start with Railway
+
+See **[RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)** for detailed Railway deployment instructions.
+
+**TL;DR:**
+1. Go to https://railway.app/new
+2. Deploy from GitHub (o42sam/rapiddocs)
+3. Add environment variables (MongoDB URL, HuggingFace API key)
+4. Railway automatically builds and deploys using the Dockerfile
+
+---
+
+## Alternative Platforms
+
+This application also works with other Docker-based platforms, though some (like Render) have known MongoDB Atlas connectivity issues.
 
 ## Prerequisites
 
@@ -215,15 +235,17 @@ For high traffic, consider:
 
 ## Alternative Deployment Platforms
 
-This Dockerfile works with:
+This Dockerfile works with various platforms:
 
-- **Railway**: railway.app
-- **Render**: render.com
-- **Fly.io**: fly.io
-- **Google Cloud Run**: cloud.google.com/run
-- **AWS ECS/Fargate**: aws.amazon.com/ecs
-- **DigitalOcean App Platform**: digitalocean.com/products/app-platform
-- **Heroku**: heroku.com (with buildpack)
+- **Railway**: railway.app ✅ **Recommended** - Best MongoDB Atlas support
+- **Render**: render.com ⚠️ **Not Recommended** - Known MongoDB Atlas TLS/SSL issues
+- **Fly.io**: fly.io ✅ Good MongoDB support
+- **Google Cloud Run**: cloud.google.com/run ✅ Good MongoDB support
+- **AWS ECS/Fargate**: aws.amazon.com/ecs ✅ Good MongoDB support
+- **DigitalOcean App Platform**: digitalocean.com/products/app-platform ✅ Good MongoDB support
+- **Heroku**: heroku.com (with buildpack) ✅ Good MongoDB support
+
+**Note on Render**: Despite multiple attempts with different configurations, Render has persistent TLS/SSL handshake failures when connecting to MongoDB Atlas. This appears to be an infrastructure-level incompatibility. Use Railway or another alternative instead.
 
 ## Cost Estimates
 
