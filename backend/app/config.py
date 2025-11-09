@@ -4,7 +4,7 @@ from typing import List
 
 class Settings(BaseSettings):
     # Application
-    APP_NAME: str = "DocGenerator"
+    APP_NAME: str = "RapidDocs"
     APP_ENV: str = "development"
     DEBUG: bool = True
     API_PREFIX: str = "/api/v1"

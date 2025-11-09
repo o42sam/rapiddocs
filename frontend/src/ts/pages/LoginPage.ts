@@ -13,7 +13,7 @@ export class LoginPage {
           <!-- Header -->
           <div class="text-center">
             <h2 class="text-4xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p class="text-gray-600">Sign in to continue to DocGen</p>
+            <p class="text-gray-600">Sign in to continue to RapidDocs</p>
           </div>
 
           <!-- Login Form -->

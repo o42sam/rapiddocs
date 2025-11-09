@@ -9,17 +9,17 @@ export class AboutProductPage {
       <div class="min-h-screen bg-gray-50 pt-20 pb-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="bg-white rounded-xl shadow-lg p-8 md:p-12">
-            <h1 class="text-4xl font-bold text-gray-900 mb-6">About DocGen</h1>
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">About RapidDocs</h1>
 
             <div class="prose prose-lg max-w-none">
               <p class="text-gray-600 mb-6">
-                DocGen is an AI-powered document generation platform that transforms your ideas into
+                RapidDocs is an AI-powered document generation platform that transforms your ideas into
                 professional PDFs with custom branding and data visualizations.
               </p>
 
               <p class="text-gray-600 mb-6">
                 Whether you need business reports, marketing materials, or data-driven presentations,
-                DocGen handles everything from content creation to final formatting.
+                RapidDocs handles everything from content creation to final formatting.
               </p>
 
               <h2 class="text-2xl font-bold text-gray-900 mt-8 mb-4">Key Features</h2>

@@ -82,7 +82,7 @@ router.register('/pricing', async () => {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DocGen initialized');
+  console.log('RapidDocs initialized');
 
   // Create navigation
   const nav = new Navigation();

@@ -52,7 +52,7 @@ export class HomePage {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">About DocGen</h2>
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">About RapidDocs</h2>
             <p class="text-xl text-gray-600 max-w-2xl mx-auto">
               Learn more about our mission and technology
             </p>
@@ -117,7 +117,7 @@ export class HomePage {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   <p class="text-gray-600">
-                    DocGen is an AI-powered document generation platform that transforms your ideas into professional PDFs.
+                    RapidDocs is an AI-powered document generation platform that transforms your ideas into professional PDFs.
                   </p>
                 </div>
 

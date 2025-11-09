@@ -13,7 +13,7 @@ export class RegisterPage {
           <!-- Header -->
           <div class="text-center">
             <h2 class="text-4xl font-bold text-gray-900 mb-2">Create Account</h2>
-            <p class="text-gray-600">Join DocGen and start creating professional documents</p>
+            <p class="text-gray-600">Join RapidDocs and start creating professional documents</p>
           </div>
 
           <!-- Register Form -->
