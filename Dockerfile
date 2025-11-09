@@ -21,14 +21,16 @@ RUN npm run build
 # Stage 2: Setup backend
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install system dependencies including SSL certificates
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libcairo2-dev \
     pkg-config \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && update-ca-certificates
 
 WORKDIR /app
 

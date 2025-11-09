@@ -1,6 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.config import settings
 import ssl
+import certifi
 
 
 class Database:
@@ -18,10 +19,19 @@ async def connect_to_mongo():
         print(f"Attempting to connect to MongoDB...")
         print(f"Database name: {settings.MONGODB_DB_NAME}")
 
-        # Connect to MongoDB Atlas
+        # Create SSL context with proper certificate handling using certifi
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        ssl_context.check_hostname = True
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+        # Connect to MongoDB Atlas with TLS/SSL configuration
         db.client = AsyncIOMotorClient(
             settings.MONGODB_URL,
-            serverSelectionTimeoutMS=30000
+            serverSelectionTimeoutMS=30000,
+            tls=True,
+            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=False,
+            tlsAllowInvalidHostnames=False
         )
 
         # Test the connection
