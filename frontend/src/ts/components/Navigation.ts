@@ -27,7 +27,7 @@ export class Navigation {
         <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <div class="flex-shrink-0">
-            <a href="/" class="flex items-center hover:opacity-80 transition-opacity" data-route="/">
+            <a href="/" class="flex items-center hover:opacity-80 transition-opacity" data-route="/" style="margin-top: 2rem;">
               <img src="/logo.png" alt="RapidDocs" class="h-30 w-auto" style="height: 7.5rem;" />
             </a>
           </div>
