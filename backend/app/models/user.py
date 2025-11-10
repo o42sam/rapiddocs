@@ -28,6 +28,7 @@ class User(BaseModel):
     username: str
     hashed_password: str
     full_name: Optional[str] = None
+    credits: int = 40  # Default 40 free credits for new users
     is_active: bool = True
     is_verified: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)

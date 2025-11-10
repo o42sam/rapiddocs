@@ -83,6 +83,7 @@ async def register_user(user_data: UserRegisterRequest):
         email=user.email,
         username=user.username,
         full_name=user.full_name,
+        credits=user.credits,
         is_active=user.is_active,
         is_verified=user.is_verified,
         created_at=user.created_at.isoformat()
@@ -148,6 +149,7 @@ async def login_user(login_data: UserLoginRequest):
         email=user.email,
         username=user.username,
         full_name=user.full_name,
+        credits=user.credits,
         is_active=user.is_active,
         is_verified=user.is_verified,
         created_at=user.created_at.isoformat()
@@ -230,6 +232,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
         email=current_user.email,
         username=current_user.username,
         full_name=current_user.full_name,
+        credits=current_user.credits,
         is_active=current_user.is_active,
         is_verified=current_user.is_verified,
         created_at=current_user.created_at.isoformat()

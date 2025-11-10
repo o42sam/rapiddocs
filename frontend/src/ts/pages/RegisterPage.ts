@@ -224,7 +224,11 @@ export class RegisterPage {
         full_name: fullNameInput.value || undefined
       });
 
+      // Set authenticated state
       authState.setAuthenticated(response.user);
+
+      // Small delay to ensure state propagates before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       // Redirect to generate page
       router.navigate('/generate');

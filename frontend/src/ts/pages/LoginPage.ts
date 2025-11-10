@@ -157,7 +157,11 @@ export class LoginPage {
         password: passwordInput.value
       });
 
+      // Set authenticated state
       authState.setAuthenticated(response.user);
+
+      // Small delay to ensure state propagates before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       // Redirect to generate page or home
       router.navigate('/generate');

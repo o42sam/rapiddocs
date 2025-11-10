@@ -7,24 +7,15 @@ export class GeneratePage {
     const app = document.getElementById('app');
     if (!app) return;
 
-    // Hide navigation
+    // Show navigation
     const navContainer = document.getElementById('nav-container');
     if (navContainer) {
-      navContainer.style.display = 'none';
+      navContainer.style.display = '';
     }
 
     app.innerHTML = `
-      <div class="min-h-screen bg-gray-50 pb-12">
-        <!-- Logo at top left -->
-        <div class="fixed top-0 left-0 right-0 bg-gray-50 z-50">
-          <div class="px-4 sm:px-6 lg:px-8 py-3">
-            <a href="/" class="inline-block hover:opacity-80 transition-opacity" style="margin-top: 2rem;">
-              <img src="/logo.png" alt="RapidDocs" class="h-30 w-auto" style="height: 7.5rem;" />
-            </a>
-          </div>
-        </div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
+      <div class="min-h-screen bg-gray-50 pb-12 pt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
           <!-- Page Header -->
           <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-900 mb-2">Generate Your Document</h1>
@@ -107,7 +98,17 @@ export class GeneratePage {
                           Formal Document
                         </span>
                         <span class="mt-1 text-xs text-gray-500">Professional text-only document with decorative lines. No images or charts.</span>
-                        <span class="mt-2 text-xs font-medium text-gray-600">⚡ ~60 seconds</span>
+                        <div class="mt-2 flex items-center justify-between gap-4">
+                          <span class="text-xs font-medium text-gray-600">⚡ ~60 seconds</span>
+                          ${authState.isAuthenticated ? `
+                          <span class="flex items-center gap-1 text-xs font-semibold text-blue-600">
+                            <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd" />
+                            </svg>
+                            34 credits
+                          </span>
+                          ` : ''}
+                        </div>
                       </span>
                     </span>
                     <svg class="h-5 w-5 text-blue-600 opacity-0 peer-checked:opacity-100 absolute top-4 right-4" fill="currentColor" viewBox="0 0 20 20">
@@ -128,7 +129,17 @@ export class GeneratePage {
                           Infographic Document
                         </span>
                         <span class="mt-1 text-xs text-gray-500">Rich visual document with AI images and data charts. Perfect for presentations.</span>
-                        <span class="mt-2 text-xs font-medium text-gray-600">⏱️ ~120 seconds</span>
+                        <div class="mt-2 flex items-center justify-between gap-4">
+                          <span class="text-xs font-medium text-gray-600">⏱️ ~120 seconds</span>
+                          ${authState.isAuthenticated ? `
+                          <span class="flex items-center gap-1 text-xs font-semibold text-blue-600">
+                            <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd" />
+                            </svg>
+                            52 credits
+                          </span>
+                          ` : ''}
+                        </div>
                       </span>
                     </span>
                     <svg class="h-5 w-5 text-blue-600 opacity-0 peer-checked:opacity-100 absolute top-4 right-4" fill="currentColor" viewBox="0 0 20 20">
@@ -175,6 +186,27 @@ export class GeneratePage {
 
               <!-- Error Container -->
               <div id="error-container" class="hidden"></div>
+
+              <!-- Insufficient Credits Warning -->
+              <div id="insufficient-credits-warning" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-red-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                  <div class="flex-1">
+                    <h3 class="text-sm font-medium text-red-800">Insufficient Credits</h3>
+                    <p class="text-sm text-red-700 mt-1">
+                      You don't have enough credits to generate this document. Please purchase more credits to continue.
+                    </p>
+                    <button
+                      id="buy-credits-from-warning-btn"
+                      class="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      Buy Credits Now
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <!-- Submit Button -->
               <div class="flex justify-end">
@@ -263,15 +295,15 @@ export class GeneratePage {
     this.attachEventListeners();
     this.setupGenerationListener();
     this.restoreFormData();
+    this.setupCreditsCheck();
   }
 
   private attachEventListeners(): void {
-    // Handle logo click to go home
-    const logoLink = document.querySelector('a[href="/"]');
-    if (logoLink) {
-      logoLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        router.navigate('/');
+    // Buy Credits button in warning
+    const buyCreditsBtn = document.getElementById('buy-credits-from-warning-btn');
+    if (buyCreditsBtn) {
+      buyCreditsBtn.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('open-credits-modal'));
       });
     }
 
@@ -438,13 +470,62 @@ export class GeneratePage {
     }
   }
 
-  destroy(): void {
-    // Show navigation again when leaving the page
-    const navContainer = document.getElementById('nav-container');
-    if (navContainer) {
-      navContainer.style.display = '';
-    }
+  private setupCreditsCheck(): void {
+    if (!authState.isAuthenticated) return;
 
+    const DOCUMENT_COSTS = {
+      formal: 34,
+      infographic: 52
+    };
+
+    const updateCreditsCheck = () => {
+      const documentTypeRadio = document.querySelector('input[name="document_type"]:checked') as HTMLInputElement;
+      const documentType = documentTypeRadio?.value || 'infographic';
+      const cost = DOCUMENT_COSTS[documentType as keyof typeof DOCUMENT_COSTS];
+      const userCredits = authState.user?.credits ?? 0;
+
+      // Check if user has enough credits
+      const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+      const warningDiv = document.getElementById('insufficient-credits-warning');
+
+      if (userCredits < cost) {
+        // Insufficient credits - disable button and show warning
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          submitBtn.title = 'Insufficient credits';
+        }
+        warningDiv?.classList.remove('hidden');
+      } else {
+        // Sufficient credits - enable button and hide warning
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          submitBtn.title = '';
+        }
+        warningDiv?.classList.add('hidden');
+      }
+    };
+
+    // Initial check
+    updateCreditsCheck();
+
+    // Update when document type changes
+    const documentTypeRadios = document.querySelectorAll('input[name="document_type"]');
+    documentTypeRadios.forEach(radio => {
+      radio.addEventListener('change', updateCreditsCheck);
+    });
+
+    // Listen for credits updates (after purchase)
+    authState.subscribe((isAuthenticated, user) => {
+      if (isAuthenticated && user) {
+        // Re-check credits
+        updateCreditsCheck();
+      }
+    });
+  }
+
+  destroy(): void {
     // Cleanup if needed
     window.removeEventListener('document-generated', this.setupGenerationListener);
   }

@@ -7,7 +7,7 @@ import os
 
 from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
-from app.routes import documents, generation, upload, auth
+from app.routes import documents, generation, upload, auth, credits, bitcoin
 
 # Debug: Print environment variables at startup
 print("=" * 50)
@@ -68,6 +68,8 @@ if os.path.exists(settings.PDF_OUTPUT_DIR):
 
 # Include routers
 app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["authentication"])
+app.include_router(credits.router, prefix=f"{settings.API_PREFIX}/credits", tags=["credits"])
+app.include_router(bitcoin.router, prefix=f"{settings.API_PREFIX}/bitcoin", tags=["bitcoin-payments"])
 app.include_router(documents.router, prefix=settings.API_PREFIX, tags=["documents"])
 app.include_router(generation.router, prefix=settings.API_PREFIX, tags=["generation"])
 app.include_router(upload.router, prefix=settings.API_PREFIX, tags=["upload"])

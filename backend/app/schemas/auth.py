@@ -93,6 +93,7 @@ class UserResponse(BaseModel):
     email: str
     username: str
     full_name: Optional[str] = None
+    credits: int
     is_active: bool
     is_verified: bool
     created_at: str
@@ -104,6 +105,7 @@ class UserResponse(BaseModel):
                 "email": "user@example.com",
                 "username": "johndoe",
                 "full_name": "John Doe",
+                "credits": 40,
                 "is_active": True,
                 "is_verified": False,
                 "created_at": "2025-01-15T10:30:00Z"

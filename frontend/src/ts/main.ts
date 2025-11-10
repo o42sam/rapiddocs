@@ -1,10 +1,14 @@
 import '../styles/main.css';
 import { router } from './router';
 import { Navigation } from './components/Navigation';
+import { CreditsPurchaseModal } from './components/CreditsPurchaseModal';
 import { authService } from './auth/authService';
 
 // Setup axios interceptors for authentication
 authService.setupAxiosInterceptors();
+
+// Initialize credits purchase modal
+new CreditsPurchaseModal();
 
 // Track current page for cleanup
 let currentPage: any = null;

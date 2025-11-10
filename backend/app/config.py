@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # 30 days
 
+    # Bitcoin Payment Configuration
+    BITCOIN_NETWORK: str = "testnet"  # "mainnet" or "testnet"
+    BITCOIN_PERSONAL_WALLET: str = ""  # Your personal wallet address for fund forwarding
+    BITCOIN_CONFIRMATIONS_REQUIRED: int = 3  # Number of confirmations required
+    BITCOIN_PAYMENT_TIMEOUT_MINUTES: int = 60  # Payment timeout in minutes
+    BITCOIN_API_URL: str = "https://blockstream.info/testnet/api"  # Blockchain API for testnet
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

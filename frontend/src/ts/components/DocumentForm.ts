@@ -3,6 +3,8 @@ import { DocumentGenerationRequest, JobStatusResponse } from '../types/document'
 import { validateDescription, validateLength, validateFile } from '../utils/validation';
 import { ColorPalette } from './ColorPalette';
 import { StatisticsForm } from './StatisticsForm';
+import { creditsService } from '../services/creditsService';
+import { authState } from '../auth/authState';
 
 export class DocumentForm {
   private form: HTMLFormElement;
@@ -148,6 +150,30 @@ export class DocumentForm {
     // Submit
     try {
       this.showLoading(true);
+
+      // Deduct credits before generating document
+      try {
+        const deductionResult = await creditsService.deductCredits(document_type);
+
+        // Update user's credits in authState
+        const currentUser = authState.user;
+        if (currentUser) {
+          authState.setAuthenticated({
+            ...currentUser,
+            credits: deductionResult.new_balance
+          });
+        }
+
+        console.log(`Credits deducted: ${deductionResult.credits_deducted}, New balance: ${deductionResult.new_balance}`);
+      } catch (creditsError: any) {
+        // Handle credits deduction error
+        const errorMessage = creditsError.response?.data?.detail || 'Failed to deduct credits';
+        this.showErrors([errorMessage]);
+        this.showLoading(false);
+        return;
+      }
+
+      // Generate document
       const response = await documentApi.generateDocument(request);
       this.currentJobId = response.job_id;
       this.startStatusPolling();
