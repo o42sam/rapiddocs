@@ -281,6 +281,18 @@ async def confirm_and_process_payment(
                 detail="Unauthorized access to payment"
             )
 
+        # Check if payment is already processed
+        if payment["status"] in ["forwarded"]:
+            # Already processed, return success (idempotent)
+            return BitcoinPaymentConfirmResponse(
+                success=True,
+                payment_id=payment_id,
+                credits_added=payment["credits"],
+                new_balance=current_user.credits,
+                tx_hash=payment.get("tx_hash", ""),
+                message="Payment already processed successfully"
+            )
+
         # Check if payment is confirmed
         if payment["status"] != "confirmed":
             raise HTTPException(
@@ -288,12 +300,15 @@ async def confirm_and_process_payment(
                 detail=f"Payment is not confirmed. Current status: {payment['status']}"
             )
 
-        # Add credits to user account
-        new_credits = current_user.credits + payment["credits"]
-        await db.users.update_one(
+        # Add credits to user account (use $inc to avoid race conditions)
+        result = await db.users.update_one(
             {"_id": current_user.id},
-            {"$set": {"credits": new_credits}}
+            {"$inc": {"credits": payment["credits"]}}
         )
+
+        # Get updated credits
+        updated_user = await db.users.find_one({"_id": current_user.id})
+        new_credits = updated_user["credits"]
 
         # Forward funds to personal wallet
         decrypted_private_key = decrypt_private_key(payment["private_key_encrypted"])
