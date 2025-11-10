@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { apiClient } from '../api/client';
 
 // Use relative URL in production, absolute URL in development
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
@@ -45,13 +45,13 @@ class AuthService {
   private readonly USER_KEY = 'user';
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/register`, data);
+    const response = await apiClient.post<AuthResponse>(`/auth/register`, data);
     this.saveAuth(response.data);
     return response.data;
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await axios.post<AuthResponse>(`${API_BASE_URL}/auth/login`, credentials);
+    const response = await apiClient.post<AuthResponse>(`/auth/login`, credentials);
     this.saveAuth(response.data);
     return response.data;
   }
@@ -60,8 +60,8 @@ class AuthService {
     try {
       const token = this.getAccessToken();
       if (token) {
-        await axios.post(
-          `${API_BASE_URL}/auth/logout`,
+        await apiClient.post(
+          `/auth/logout`,
           {},
           {
             headers: { Authorization: `Bearer ${token}` }
@@ -81,7 +81,7 @@ class AuthService {
       throw new Error('No refresh token available');
     }
 
-    const response = await axios.post<AuthTokens>(`${API_BASE_URL}/auth/refresh`, {
+    const response = await apiClient.post<AuthTokens>(`/auth/refresh`, {
       refresh_token: refreshToken
     });
 
@@ -95,7 +95,7 @@ class AuthService {
       throw new Error('No access token available');
     }
 
-    const response = await axios.get<User>(`${API_BASE_URL}/auth/me`, {
+    const response = await apiClient.get<User>(`/auth/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -142,7 +142,7 @@ class AuthService {
 
   // Setup axios interceptor for automatic token injection
   setupAxiosInterceptors(): void {
-    axios.interceptors.request.use(
+    apiClient.interceptors.request.use(
       (config) => {
         const token = this.getAccessToken();
         if (token && config.headers) {
@@ -153,7 +153,7 @@ class AuthService {
       (error) => Promise.reject(error)
     );
 
-    axios.interceptors.response.use(
+    apiClient.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
@@ -164,7 +164,7 @@ class AuthService {
           try {
             const tokens = await this.refreshToken();
             originalRequest.headers.Authorization = `Bearer ${tokens.access_token}`;
-            return axios(originalRequest);
+            return apiClient(originalRequest);
           } catch (refreshError) {
             this.clearAuth();
             window.location.href = '/login';
