@@ -86,9 +86,24 @@ async def health_check():
     return {"status": "healthy"}
 
 
-# Serve frontend static files (for production deployment)
+# Serve frontend static files
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 if os.path.exists(static_dir):
-    # Serve static files (includes index.html, favicon, etc.)
-    # This should be mounted LAST so it doesn't override API routes
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+    # Mount assets directory
+    assets_dir = os.path.join(static_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    # Serve root
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(os.path.join(static_dir, "index.html"))
+
+    # Serve static files
+    @app.get("/favicon.ico")
+    async def serve_favicon():
+        return FileResponse(os.path.join(static_dir, "favicon.ico"))
+
+    @app.get("/logo.png")
+    async def serve_logo():
+        return FileResponse(os.path.join(static_dir, "logo.png"))
