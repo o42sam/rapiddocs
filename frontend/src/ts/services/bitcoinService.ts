@@ -1,7 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD ? '/api/v1' : 'http://localhost:8000/api/v1');
+import { apiClient } from '../api/client';
 
 export interface BitcoinPaymentInitRequest {
   package: 'small' | 'medium' | 'large';
@@ -48,24 +45,24 @@ export interface BitcoinPaymentConfirmResponse {
 
 class BitcoinService {
   async initiateBitcoinPayment(request: BitcoinPaymentInitRequest): Promise<BitcoinPaymentInitResponse> {
-    const response = await axios.post<BitcoinPaymentInitResponse>(
-      `${API_BASE_URL}/bitcoin/initiate`,
+    const response = await apiClient.post<BitcoinPaymentInitResponse>(
+      `/bitcoin/initiate`,
       request
     );
     return response.data;
   }
 
   async checkPaymentStatus(request: BitcoinPaymentStatusRequest): Promise<BitcoinPaymentStatusResponse> {
-    const response = await axios.post<BitcoinPaymentStatusResponse>(
-      `${API_BASE_URL}/bitcoin/status`,
+    const response = await apiClient.post<BitcoinPaymentStatusResponse>(
+      `/bitcoin/status`,
       request
     );
     return response.data;
   }
 
   async confirmPayment(paymentId: string): Promise<BitcoinPaymentConfirmResponse> {
-    const response = await axios.post<BitcoinPaymentConfirmResponse>(
-      `${API_BASE_URL}/bitcoin/confirm/${paymentId}`
+    const response = await apiClient.post<BitcoinPaymentConfirmResponse>(
+      `/bitcoin/confirm/${paymentId}`
     );
     return response.data;
   }

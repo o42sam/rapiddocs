@@ -1,7 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD ? '/api/v1' : 'http://localhost:8000/api/v1');
+import { apiClient } from '../api/client';
 
 export interface CreditsPackage {
   id: string;
@@ -35,37 +32,37 @@ export interface DocumentCost {
 
 class CreditsService {
   async getPackages(): Promise<CreditsPackage[]> {
-    const response = await axios.get<{ packages: CreditsPackage[] }>(
-      `${API_BASE_URL}/credits/packages`
+    const response = await apiClient.get<{ packages: CreditsPackage[] }>(
+      `/credits/packages`
     );
     return response.data.packages;
   }
 
   async getBalance(): Promise<CreditsBalanceResponse> {
-    const response = await axios.get<CreditsBalanceResponse>(
-      `${API_BASE_URL}/credits/balance`
+    const response = await apiClient.get<CreditsBalanceResponse>(
+      `/credits/balance`
     );
     return response.data;
   }
 
   async purchaseCredits(purchaseData: CreditsPurchaseRequest): Promise<CreditsPurchaseResponse> {
-    const response = await axios.post<CreditsPurchaseResponse>(
-      `${API_BASE_URL}/credits/purchase`,
+    const response = await apiClient.post<CreditsPurchaseResponse>(
+      `/credits/purchase`,
       purchaseData
     );
     return response.data;
   }
 
   async getDocumentCost(documentType: string): Promise<DocumentCost> {
-    const response = await axios.get<DocumentCost>(
-      `${API_BASE_URL}/credits/cost/${documentType}`
+    const response = await apiClient.get<DocumentCost>(
+      `/credits/cost/${documentType}`
     );
     return response.data;
   }
 
   async deductCredits(documentType: string): Promise<{ message: string; credits_deducted: number; new_balance: number }> {
-    const response = await axios.post(
-      `${API_BASE_URL}/credits/deduct`,
+    const response = await apiClient.post(
+      `/credits/deduct`,
       null,
       {
         params: { document_type: documentType }
