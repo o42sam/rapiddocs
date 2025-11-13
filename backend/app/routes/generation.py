@@ -431,6 +431,7 @@ async def generate_document(
     # Create generation job
     job = GenerationJob(
         document_id=ObjectId(doc_id),
+        user_id=str(current_user.id),
         status="pending",
         progress=0,
         current_step="initializing"
