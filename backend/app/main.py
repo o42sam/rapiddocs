@@ -108,3 +108,7 @@ if os.path.exists(static_dir):
     @app.get("/logo.png")
     async def serve_logo():
         return FileResponse(os.path.join(static_dir, "logo.png"))
+
+    @app.get("/rd-logo.svg")
+    async def serve_rd_logo():
+        return FileResponse(os.path.join(static_dir, "rd-logo.svg"))
