@@ -51,11 +51,56 @@ class TextGenerationService:
 
         return "\n".join(stats_text)
 
-    def _build_prompt(self, description: str, word_count: int, statistics: List[Statistic]) -> str:
-        """Build the prompt for text generation"""
+    def _build_prompt(self, description: str, word_count: int, statistics: List[Statistic], document_type: str = "formal") -> str:
+        """Build the prompt for text generation based on document type"""
         stats_formatted = self._format_statistics(statistics)
 
-        prompt = f"""You are a professional document writer. Generate a comprehensive business document based on the following:
+        # Create document-type-specific prompts
+        if document_type == "formal":
+            prompt = f"""You are a professional document writer. Generate a comprehensive FORMAL BUSINESS DOCUMENT based on the following:
+
+Description: {description}
+Target Length: {word_count} words
+Company Statistics:
+{stats_formatted}
+
+Requirements for FORMAL BUSINESS DOCUMENT:
+- Professional, formal, and corporate tone
+- Include sections: Executive Summary, Introduction, Main Content, Statistics Analysis, Conclusion
+- Integrate the provided statistics naturally into the content
+- Use clear headings and subheadings (use **bold** for headings)
+- Write in a traditional business report format
+- Focus on analysis, insights, and professional presentation
+- Ensure content is coherent and well-structured
+- Write exactly around {word_count} words
+
+Generate the formal business document now:"""
+
+        elif document_type == "infographic":
+            prompt = f"""You are a professional document writer. Generate an INFOGRAPHIC-STYLE DOCUMENT based on the following:
+
+Description: {description}
+Target Length: {word_count} words
+Company Statistics:
+{stats_formatted}
+
+Requirements for INFOGRAPHIC-STYLE DOCUMENT:
+- Engaging, dynamic, and visual-friendly tone
+- Include sections with short, punchy headings
+- Emphasize key data points and statistics prominently
+- Use short paragraphs and bullet points where appropriate
+- Write in a modern, accessible style suitable for visual presentation
+- Make statistics and key facts stand out in the text
+- Use clear headings (use **bold** for headings)
+- Focus on impact and easy comprehension
+- Ensure content works well alongside charts and images
+- Write exactly around {word_count} words
+
+Generate the infographic-style document now:"""
+
+        else:
+            # Default to formal if unknown type
+            prompt = f"""You are a professional document writer. Generate a comprehensive business document based on the following:
 
 Description: {description}
 Target Length: {word_count} words
@@ -79,15 +124,17 @@ Generate the document now:"""
         description: str,
         word_count: int,
         statistics: List[Statistic],
+        document_type: str = "formal",
         max_retries: int = 1
     ) -> str:
         """
-        Generate document text using Ollama local API
+        Generate document text based on document type
 
         Args:
             description: Document description/theme
             word_count: Target word count
             statistics: List of statistics to include
+            document_type: Type of document (formal, infographic)
             max_retries: Maximum retry attempts
 
         Returns:
@@ -97,10 +144,10 @@ Generate the document now:"""
             TextGenerationError: If text generation fails
         """
         try:
-            logger.info(f"Starting text generation: word_count={word_count}, stats_count={len(statistics)}")
+            logger.info(f"Starting text generation: type={document_type}, word_count={word_count}, stats_count={len(statistics)}")
             logger.debug(f"Description: {description[:100]}...")
 
-            prompt = self._build_prompt(description, word_count, statistics)
+            prompt = self._build_prompt(description, word_count, statistics, document_type)
             logger.debug(f"Prompt length: {len(prompt)} characters")
 
             for attempt in range(max_retries):

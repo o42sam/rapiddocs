@@ -8,7 +8,7 @@ export class LoginPage {
     if (!app) return;
 
     app.innerHTML = `
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-purple-50 pt-32 pb-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8">
           <!-- Header -->
           <div class="text-center">
@@ -30,7 +30,7 @@ export class LoginPage {
                   name="email"
                   required
                   autocomplete="email"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="you@example.com"
                 />
               </div>
@@ -46,7 +46,7 @@ export class LoginPage {
                   name="password"
                   required
                   autocomplete="current-password"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="Enter your password"
                 />
               </div>
@@ -58,13 +58,13 @@ export class LoginPage {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
                   <label for="remember-me" class="ml-2 block text-sm text-gray-700">
                     Remember me
                   </label>
                 </div>
-                <a href="#" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <a href="#" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
                   Forgot password?
                 </a>
               </div>

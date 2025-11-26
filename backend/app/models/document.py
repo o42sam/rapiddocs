@@ -37,7 +37,7 @@ class DesignSpecification(BaseModel):
 
 class DocumentConfig(BaseModel):
     length: int  # Target word count
-    document_type: str = "infographic"  # formal or infographic
+    document_type: str = "infographic"  # formal, infographic, or invoice
     use_watermark: bool = False  # Only applicable for formal documents with logo
     statistics: List[Statistic] = []
     design_spec: DesignSpecification
@@ -80,6 +80,7 @@ class Document(BaseModel):
 class GenerationJob(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     document_id: PyObjectId
+    user_id: str = "default"  # User who owns this job
     status: str = "pending"  # pending, processing, completed, failed
     progress: int = 0  # 0-100
     current_step: str = "initializing"

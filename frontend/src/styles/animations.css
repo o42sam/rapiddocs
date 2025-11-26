@@ -31,6 +31,35 @@
   }
 }
 
+/* Logo animations */
+.logo-slide-in {
+  animation: logoSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes logoSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-100vw);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.logo-text-fade-in {
+  animation: logoTextFadeIn 0.6s ease-out both;
+}
+
+@keyframes logoTextFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Hero animations */
 .hero-title-fade {
   animation: heroTitleFade 1s ease-out;
@@ -79,11 +108,11 @@
 
 /* Button hover effects */
 .btn-primary {
-  @apply bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transform hover:scale-105 transition-all duration-300;
+  @apply bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-primary-700 hover:shadow-xl transform hover:scale-105 transition-all duration-300;
 }
 
 .btn-secondary {
-  @apply bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-blue-600 hover:bg-blue-50 transform hover:scale-105 transition-all duration-300;
+  @apply bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold text-lg border-2 border-primary-600 hover:bg-primary-50 transform hover:scale-105 transition-all duration-300;
 }
 
 .btn-outline {
@@ -97,15 +126,15 @@
 
 /* Gradient backgrounds */
 .gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0044aa 0%, #0055cc 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #d5e5ff 0%, #aaccff 100%);
 }
 
 .gradient-blue {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #0055cc 0%, #77aaff 100%);
 }
 
 /* Floating animation */

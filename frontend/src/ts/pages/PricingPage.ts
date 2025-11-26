@@ -51,14 +51,14 @@ export class PricingPage {
                   <span class="text-gray-600">Email support</span>
                 </li>
               </ul>
-              <button class="btn-outline text-blue-600 w-full">
+              <button class="btn-outline text-primary-600 w-full">
                 Get Started
               </button>
             </div>
 
             <!-- Pro Plan (Highlighted) -->
-            <div class="bg-white rounded-xl shadow-lg ring-2 ring-blue-600 transform scale-105 p-8">
-              <div class="text-center text-blue-600 font-semibold mb-4">MOST POPULAR</div>
+            <div class="bg-white rounded-xl shadow-lg ring-2 ring-primary-600 transform scale-105 p-8">
+              <div class="text-center text-primary-600 font-semibold mb-4">MOST POPULAR</div>
               <div class="text-center mb-8">
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
                 <div class="text-5xl font-bold text-gray-900">
@@ -156,7 +156,7 @@ export class PricingPage {
                   <span class="text-gray-600">Advanced analytics</span>
                 </li>
               </ul>
-              <button class="btn-outline text-blue-600 w-full">
+              <button class="btn-outline text-primary-600 w-full">
                 Contact Sales
               </button>
             </div>

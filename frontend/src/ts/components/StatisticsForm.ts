@@ -29,7 +29,7 @@ export class StatisticsForm {
           <button
             type="button"
             id="add-statistic-btn"
-            class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:bg-gray-400"
+            class="px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700 transition disabled:bg-gray-400"
             ${this.statistics.length >= 10 ? 'disabled' : ''}
           >
             + Add Statistic

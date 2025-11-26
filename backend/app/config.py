@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     BITCOIN_PAYMENT_TIMEOUT_MINUTES: int = 60  # Payment timeout in minutes
     BITCOIN_API_URL: str = "https://blockstream.info/testnet/api"  # Blockchain API for testnet
 
+    # Paystack Payment Configuration
+    PAYSTACK_SECRET_KEY: str = ""  # Paystack secret key
+    PAYSTACK_PUBLIC_KEY: str = ""  # Paystack public key
+    PAYSTACK_WEBHOOK_SECRET: str = ""  # Paystack webhook secret for verification
+    PAYSTACK_CURRENCY: str = "NGN"  # Currency code (NGN for Nigeria)
+    PAYSTACK_API_URL: str = "https://api.paystack.co"  # Paystack API base URL
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

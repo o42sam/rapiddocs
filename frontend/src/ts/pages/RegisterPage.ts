@@ -8,7 +8,7 @@ export class RegisterPage {
     if (!app) return;
 
     app.innerHTML = `
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-purple-50 pt-32 pb-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8">
           <!-- Header -->
           <div class="text-center">
@@ -30,7 +30,7 @@ export class RegisterPage {
                   name="username"
                   required
                   autocomplete="username"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="Choose a username"
                 />
               </div>
@@ -45,7 +45,7 @@ export class RegisterPage {
                   id="full_name"
                   name="full_name"
                   autocomplete="name"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="Your full name"
                 />
               </div>
@@ -61,7 +61,7 @@ export class RegisterPage {
                   name="email"
                   required
                   autocomplete="email"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="you@example.com"
                 />
               </div>
@@ -77,7 +77,7 @@ export class RegisterPage {
                   name="password"
                   required
                   autocomplete="new-password"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="Create a strong password"
                 />
                 <p class="mt-1 text-xs text-gray-500">At least 8 characters</p>
@@ -94,7 +94,7 @@ export class RegisterPage {
                   name="confirm-password"
                   required
                   autocomplete="new-password"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   placeholder="Confirm your password"
                 />
               </div>
@@ -106,10 +106,10 @@ export class RegisterPage {
                   name="terms"
                   type="checkbox"
                   required
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                  class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mt-1"
                 />
                 <label for="terms" class="ml-2 block text-sm text-gray-700">
-                  I agree to the <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Terms and Conditions</a> and <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Privacy Policy</a>
+                  I agree to the <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Terms and Conditions</a> and <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Privacy Policy</a>
                 </label>
               </div>
 

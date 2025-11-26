@@ -8,17 +8,21 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#e6eeff',
+          100: '#d5e5ff',  // From logo light blue
+          200: '#aaccff',
+          300: '#77aaff',
+          400: '#4477dd',
+          500: '#0055cc',
+          600: '#0044aa',  // From logo primary blue
+          700: '#003388',
+          800: '#002266',
+          900: '#001144',
         },
+      },
+      fontFamily: {
+        sans: ['"Liberation Serif"', 'Georgia', 'serif'],
+        serif: ['"Liberation Serif"', 'Georgia', 'serif'],
       },
     },
   },

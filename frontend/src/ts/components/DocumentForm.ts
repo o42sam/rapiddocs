@@ -44,27 +44,27 @@ export class DocumentForm {
       });
     }
 
-    // Document type change listener
-    const documentTypeInputs = document.querySelectorAll('input[name="document_type"]');
-    documentTypeInputs.forEach(input => {
-      input.addEventListener('change', () => {
+    // Document type change listener for select element
+    const documentTypeSelect = document.getElementById('document-type-select');
+    if (documentTypeSelect) {
+      documentTypeSelect.addEventListener('change', () => {
         this.updateWatermarkVisibility();
       });
-    });
+    }
   }
 
   private updateWatermarkVisibility(): void {
     const watermarkContainer = document.getElementById('watermark-container');
     if (!watermarkContainer) return;
 
-    const documentTypeInput = document.querySelector('input[name="document_type"]:checked') as HTMLInputElement;
-    const documentType = documentTypeInput?.value || 'infographic';
+    const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+    const documentType = documentTypeSelect?.value || 'infographic';
 
     const logoInput = document.getElementById('logo-input') as HTMLInputElement;
     const hasLogo = logoInput.files && logoInput.files.length > 0;
 
-    // Show watermark checkbox only if formal mode is selected AND a logo is uploaded
-    if (documentType === 'formal' && hasLogo) {
+    // Show watermark checkbox only if formal or invoice mode is selected AND a logo is uploaded
+    if ((documentType === 'formal' || documentType === 'invoice') && hasLogo) {
       watermarkContainer.classList.remove('hidden');
     } else {
       watermarkContainer.classList.add('hidden');
@@ -106,9 +106,9 @@ export class DocumentForm {
     const logoInput = document.getElementById('logo-input') as HTMLInputElement;
     const logo = logoInput.files?.[0];
 
-    // Get document type
-    const documentTypeInput = document.querySelector('input[name="document_type"]:checked') as HTMLInputElement;
-    const document_type = (documentTypeInput?.value as 'formal' | 'infographic') || 'infographic';
+    // Get document type from select element (not radio buttons)
+    const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+    const document_type = (documentTypeSelect?.value as 'formal' | 'infographic' | 'invoice') || 'infographic';
 
     // Get watermark preference
     const watermarkCheckbox = document.getElementById('use-watermark') as HTMLInputElement;
@@ -120,8 +120,11 @@ export class DocumentForm {
     const descError = validateDescription(description);
     if (descError) errors.push(descError);
 
-    const lengthError = validateLength(length);
-    if (lengthError) errors.push(lengthError);
+    // Skip length validation for invoices (they don't have word count)
+    if (document_type !== 'invoice') {
+      const lengthError = validateLength(length);
+      if (lengthError) errors.push(lengthError);
+    }
 
     if (logo) {
       const fileError = validateFile(logo);

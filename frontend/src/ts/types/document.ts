@@ -16,7 +16,7 @@ export interface DesignSpecification {
 export interface DocumentGenerationRequest {
   description: string;
   length: number;
-  document_type: 'formal' | 'infographic';
+  document_type: 'formal' | 'infographic' | 'invoice';
   use_watermark: boolean;  // Only applicable for formal documents with logo
   statistics: Statistic[];
   design_spec: DesignSpecification;

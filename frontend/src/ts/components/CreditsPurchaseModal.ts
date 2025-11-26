@@ -37,11 +37,11 @@ export class CreditsPurchaseModal {
       <div class="relative top-0 sm:top-10 mx-auto p-2 sm:p-5 w-full sm:max-w-4xl min-h-screen sm:min-h-0 sm:mb-10">
         <div class="bg-white rounded-none sm:rounded-2xl shadow-2xl overflow-hidden min-h-screen sm:min-h-0">
           <!-- Header -->
-          <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
+          <div class="bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
             <div class="flex justify-between items-start sm:items-center gap-2">
               <div class="flex-1">
                 <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-white">Buy Credits</h2>
-                <p class="text-blue-100 mt-1 text-sm sm:text-base">Pay with Bitcoin to continue creating documents</p>
+                <p class="text-primary-100 mt-1 text-sm sm:text-base">Pay with Bitcoin to continue creating documents</p>
               </div>
               <button id="close-credits-modal" class="text-white hover:text-gray-200 transition-colors flex-shrink-0 p-1">
                 <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,20 +65,20 @@ export class CreditsPurchaseModal {
               <div class="border-t border-gray-200 pt-4 sm:pt-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
                   <h3 class="text-lg sm:text-xl font-bold text-gray-900">Bitcoin Payment</h3>
-                  <button id="back-to-packages-btn" class="text-blue-600 hover:text-blue-700 text-sm font-medium text-left sm:text-right">
+                  <button id="back-to-packages-btn" class="text-primary-600 hover:text-primary-700 text-sm font-medium text-left sm:text-right">
                     ← Back to Packages
                   </button>
                 </div>
 
                 <!-- Loading State -->
                 <div id="payment-loading" class="text-center py-6 sm:py-8">
-                  <div class="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+                  <div class="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary-600"></div>
                   <p class="mt-4 text-gray-600 text-sm sm:text-base">Generating payment address...</p>
                 </div>
 
                 <!-- Payment Details -->
                 <div id="payment-details" class="hidden">
-                  <div class="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                  <div class="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                       <!-- Payment Info -->
                       <div class="order-2 lg:order-1">
@@ -106,7 +106,7 @@ export class CreditsPurchaseModal {
                             />
                             <button
                               id="copy-address-btn"
-                              class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                              class="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
                             >
                               Copy
                             </button>
@@ -159,14 +159,14 @@ export class CreditsPurchaseModal {
                         <span id="confirmations-text">0 / 3</span>
                       </div>
                       <div class="w-full bg-gray-200 rounded-full h-2 sm:h-3">
-                        <div id="confirmations-bar" class="bg-blue-600 h-2 sm:h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        <div id="confirmations-bar" class="bg-primary-600 h-2 sm:h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
                       </div>
                     </div>
 
                     <!-- Transaction Hash -->
                     <div id="tx-hash-section" class="hidden mt-4 text-xs sm:text-sm">
                       <span class="text-gray-600">Transaction: </span>
-                      <a id="tx-hash-link" href="#" target="_blank" class="text-blue-600 hover:underline font-mono break-all"></a>
+                      <a id="tx-hash-link" href="#" target="_blank" class="text-primary-600 hover:underline font-mono break-all"></a>
                     </div>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export class CreditsPurchaseModal {
     }
 
     const packageIcons = {
-      small: `<svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+      small: `<svg class="w-16 h-16 mx-auto mb-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
       </svg>`,
       medium: `<svg class="w-16 h-16 mx-auto mb-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
@@ -224,8 +224,8 @@ export class CreditsPurchaseModal {
     };
 
     return this.packages.map((pkg) => `
-      <div class="package-card relative border-2 border-gray-200 rounded-xl p-4 sm:p-6 hover:border-blue-500 hover:shadow-lg transition-all cursor-pointer ${pkg.id === 'medium' ? 'border-blue-500 shadow-lg' : ''}" data-package-id="${pkg.id}">
-        ${pkg.id === 'medium' ? '<div class="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-2 sm:px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>' : ''}
+      <div class="package-card relative border-2 border-gray-200 rounded-xl p-4 sm:p-6 hover:border-primary-500 hover:shadow-lg transition-all cursor-pointer ${pkg.id === 'medium' ? 'border-primary-500 shadow-lg' : ''}" data-package-id="${pkg.id}">
+        ${pkg.id === 'medium' ? '<div class="absolute top-0 right-0 bg-primary-500 text-white text-xs font-bold px-2 sm:px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>' : ''}
 
         <div class="hidden sm:block">${packageIcons[pkg.id as keyof typeof packageIcons] || ''}</div>
 
@@ -242,7 +242,7 @@ export class CreditsPurchaseModal {
         </div>
 
         <div class="text-center mb-3 sm:mb-4">
-          <p class="text-xl sm:text-2xl font-bold text-blue-600">$${pkg.price.toFixed(2)}</p>
+          <p class="text-xl sm:text-2xl font-bold text-primary-600">$${pkg.price.toFixed(2)}</p>
           <p class="text-xs text-gray-500 mt-1">${(pkg.price / pkg.credits * 1000).toFixed(2)}¢ per 1000 credits</p>
         </div>
 
@@ -514,7 +514,7 @@ export class CreditsPurchaseModal {
     // Update status badge
     const statusColors = {
       pending: 'bg-yellow-100 text-yellow-800',
-      confirming: 'bg-blue-100 text-blue-800',
+      confirming: 'bg-primary-100 text-primary-800',
       confirmed: 'bg-green-100 text-green-800',
       forwarded: 'bg-green-100 text-green-800',
       expired: 'bg-red-100 text-red-800',
@@ -620,12 +620,12 @@ export class CreditsPurchaseModal {
       const originalText = copyBtn.textContent;
       copyBtn.textContent = 'Copied!';
       copyBtn.classList.add('bg-green-600');
-      copyBtn.classList.remove('bg-blue-600');
+      copyBtn.classList.remove('bg-primary-600');
 
       setTimeout(() => {
         copyBtn.textContent = originalText;
         copyBtn.classList.remove('bg-green-600');
-        copyBtn.classList.add('bg-blue-600');
+        copyBtn.classList.add('bg-primary-600');
       }, 2000);
     }
   }

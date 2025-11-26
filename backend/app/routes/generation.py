@@ -33,6 +33,10 @@ from app.services.visualization import visualization_service
 from app.services.pdf_generator import pdf_generator_service
 from app.services.watermark import watermark_service
 from app.services.storage import storage_service
+from app.services.invoice_generator import invoice_generator_service
+from app.services.invoice_pdf_reportlab import reportlab_invoice_pdf_generator
+from app.services.simple_invoice_generator import simple_invoice_generator
+from app.services.invoice_pdf_fpdf import fpdf_invoice_generator
 from app.config import settings
 from app.utils.logger import get_logger
 from app.utils.exceptions import (
@@ -51,9 +55,10 @@ async def generate_document_task(job_id: str, doc_id: str, logo_path: Optional[s
     """
     Background task to generate document
 
-    This task handles both formal and infographic document types:
+    This task handles three document types:
     - Formal: Text only, no images or visualizations
     - Infographic: Text + AI-generated images + data visualizations
+    - Invoice: Structured invoice with AI-generated line items and totals
     """
     db = get_database()
     start_time = time.time()
@@ -91,18 +96,34 @@ async def generate_document_task(job_id: str, doc_id: str, logo_path: Optional[s
         ]
         logger.info(f"Processing {len(statistics)} statistics")
 
-        # Generate text (run in thread pool since it's blocking)
-        logger.info("Starting text generation")
-        generated_text = await asyncio.to_thread(
-            text_generation_service.generate_text,
-            description=doc["description"],
-            word_count=doc["config"]["length"],
-            statistics=statistics
-        )
+        # For invoice type, extract items using simple AI extraction
+        if document_type == "invoice":
+            logger.info("Extracting invoice items from description")
+            invoice_items = await asyncio.to_thread(
+                simple_invoice_generator.generate_invoice_items,
+                description=doc["description"]
+            )
 
-        # Extract title
-        title = text_generation_service.extract_title(generated_text)
-        logger.info(f"Extracted title: {title}")
+            # Use simple title
+            title = "Invoice"
+            generated_text = None  # Not used for invoices
+
+            logger.info(f"Extracted {len(invoice_items)} invoice items")
+        else:
+            # Generate text for formal or infographic (run in thread pool since it's blocking)
+            logger.info(f"Starting text generation for {document_type} document")
+            generated_text = await asyncio.to_thread(
+                text_generation_service.generate_text,
+                description=doc["description"],
+                word_count=doc["config"]["length"],
+                statistics=statistics,
+                document_type=document_type
+            )
+
+            # Extract title
+            title = text_generation_service.extract_title(generated_text)
+            logger.info(f"Extracted title: {title}")
+            invoice_items = None  # Not used for formal/infographic
 
         # Update document with title
         await db.documents.update_one(
@@ -198,25 +219,44 @@ async def generate_document_task(job_id: str, doc_id: str, logo_path: Optional[s
         pdf_path = storage_service.get_pdf_path(doc_id, title)
 
         try:
-            pdf_generator_service.generate_pdf(
-                output_path=pdf_path,
-                title=title,
-                content=generated_text,
-                design_spec=design_spec,
-                document_type=document_type,
-                use_watermark=False,  # Don't use ReportLab watermark anymore
-                logo_path=logo_path,
-                image_paths=image_paths,
-                visualization_paths=viz_paths
-            )
-            logger.info(f"PDF generated successfully: {pdf_path}")
+            if document_type == "invoice":
+                # Generate invoice PDF using FPDF for clean, simple layout
+                logger.info("Generating invoice PDF with FPDF")
+                await asyncio.to_thread(
+                    fpdf_invoice_generator.generate_invoice,
+                    items=invoice_items,
+                    output_path=pdf_path,
+                    logo_path=logo_path,
+                    header_text="INVOICE"
+                )
+                logger.info(f"Invoice PDF generated successfully: {pdf_path}")
+            else:
+                # Generate regular document PDF (formal or infographic)
+                pdf_generator_service.generate_pdf(
+                    output_path=pdf_path,
+                    title=title,
+                    content=generated_text,
+                    design_spec=design_spec,
+                    document_type=document_type,
+                    use_watermark=False,  # Don't use ReportLab watermark anymore
+                    logo_path=logo_path,
+                    image_paths=image_paths,
+                    visualization_paths=viz_paths
+                )
+                logger.info(f"PDF generated successfully: {pdf_path}")
 
             # Apply watermark as post-processing step if requested
-            if use_watermark and document_type == "formal" and logo_path and os.path.exists(logo_path):
-                logger.info("Applying watermark to PDF using PyPDF2")
+            # Supported for both formal and invoice document types
+            if use_watermark and document_type in ["formal", "invoice"] and logo_path and os.path.exists(logo_path):
+                logger.info(f"Applying watermark to {document_type} PDF using PyPDF2")
 
                 # Create temporary path for watermarked PDF
                 watermarked_path = pdf_path.replace('.pdf', '_watermarked.pdf')
+
+                # Determine whether to skip first page based on document type
+                # Formal: skip cover page (first page)
+                # Invoice: include all pages including cover
+                skip_first_page = (document_type == "formal")
 
                 # Apply watermark
                 await asyncio.to_thread(
@@ -224,13 +264,13 @@ async def generate_document_task(job_id: str, doc_id: str, logo_path: Optional[s
                     input_pdf_path=pdf_path,
                     output_pdf_path=watermarked_path,
                     logo_path=logo_path,
-                    skip_first_page=True,
+                    skip_first_page=skip_first_page,
                     opacity=0.15
                 )
 
                 # Replace original PDF with watermarked version
                 os.replace(watermarked_path, pdf_path)
-                logger.info(f"Watermark applied successfully to: {pdf_path}")
+                logger.info(f"Watermark applied successfully to {document_type} PDF: {pdf_path} (skip_first_page={skip_first_page})")
 
         except PDFGenerationError as e:
             logger.error(f"PDF generation failed: {e.message}")
@@ -259,7 +299,7 @@ async def generate_document_task(job_id: str, doc_id: str, logo_path: Optional[s
                     "generation_metadata": {
                         "text_model": settings.TEXT_GENERATION_MODEL,
                         "image_model": settings.IMAGE_GENERATION_MODEL,
-                        "word_count": len(generated_text.split()),
+                        "word_count": len(generated_text.split()) if generated_text else 0,
                         "generation_time_seconds": generation_time
                     },
                     "updated_at": datetime.utcnow(),
@@ -373,11 +413,11 @@ async def generate_document(
     db = get_database()
 
     # Validate document_type
-    if document_type not in ['formal', 'infographic']:
+    if document_type not in ['formal', 'infographic', 'invoice']:
         logger.warning(f"Invalid document_type received: {document_type}")
         raise HTTPException(
             status_code=400,
-            detail="document_type must be either 'formal' or 'infographic'"
+            detail="document_type must be 'formal', 'infographic', or 'invoice'"
         )
 
     # Parse JSON fields
@@ -445,11 +485,18 @@ async def generate_document(
 
     logger.info(f"Document generation task started: job_id={job_id}, doc_id={doc_id}, type={document_type}")
 
+    # Estimate generation time based on document type
+    time_estimates = {
+        'formal': 60,
+        'infographic': 120,
+        'invoice': 45
+    }
+
     return GenerationJobResponse(
         job_id=job_id,
         status="processing",
         message=f"Document generation started ({document_type} type)",
-        estimated_time_seconds=120 if document_type == "infographic" else 60
+        estimated_time_seconds=time_estimates.get(document_type, 60)
     )
 
 
@@ -470,8 +517,7 @@ async def get_generation_status(
         raise HTTPException(status_code=404, detail="Job not found")
 
     # Verify the job belongs to the current user
-    doc = await db.documents.find_one({"_id": job["document_id"]})
-    if not doc or doc.get("user_id") != str(current_user.id):
+    if job.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=404, detail="Job not found")
 
     return JobStatusResponse(

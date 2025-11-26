@@ -23,7 +23,8 @@ CREDITS_PACKAGES = {
 # Document generation costs
 DOCUMENT_COSTS = {
     "formal": 34,
-    "infographic": 52
+    "infographic": 52,
+    "invoice": 28
 }
 
 

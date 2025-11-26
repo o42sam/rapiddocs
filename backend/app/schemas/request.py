@@ -19,7 +19,7 @@ class DesignSpecRequest(BaseModel):
 class DocumentGenerationRequest(BaseModel):
     description: str = Field(..., min_length=10, max_length=2000)
     length: int = Field(..., ge=500, le=10000)
-    document_type: str = Field("infographic", pattern="^(formal|infographic)$")
+    document_type: str = Field("infographic", pattern="^(formal|infographic|invoice)$")
     use_watermark: bool = Field(False)  # Only applicable for formal documents with logo
     statistics: List[StatisticRequest] = Field(default_factory=list, max_length=10)
     design_spec: DesignSpecRequest
@@ -34,8 +34,8 @@ class DocumentGenerationRequest(BaseModel):
     @field_validator('document_type')
     @classmethod
     def validate_document_type(cls, v):
-        if v not in ['formal', 'infographic']:
-            raise ValueError('document_type must be either "formal" or "infographic"')
+        if v not in ['formal', 'infographic', 'invoice']:
+            raise ValueError('document_type must be "formal", "infographic", or "invoice"')
         return v
 
 

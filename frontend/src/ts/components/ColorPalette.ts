@@ -40,7 +40,7 @@ export class ColorPalette {
             type="button"
             data-theme-index="${index}"
             class="theme-option p-4 border-2 rounded-lg transition-all hover:shadow-lg ${
-              index === 0 ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+              index === 0 ? 'border-primary-500 bg-primary-50' : 'border-gray-200'
             }"
           >
             <div class="flex gap-2 mb-2">
@@ -75,10 +75,10 @@ export class ColorPalette {
     const buttons = this.container.querySelectorAll('.theme-option');
     buttons.forEach((button, i) => {
       if (i === index) {
-        button.classList.add('border-blue-500', 'bg-blue-50');
+        button.classList.add('border-primary-500', 'bg-primary-50');
         button.classList.remove('border-gray-200');
       } else {
-        button.classList.remove('border-blue-500', 'bg-blue-50');
+        button.classList.remove('border-primary-500', 'bg-primary-50');
         button.classList.add('border-gray-200');
       }
     });

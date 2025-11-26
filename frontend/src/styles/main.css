@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    font-family: "Liberation Serif", Georgia, serif;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -42,12 +48,12 @@
 input:focus,
 textarea:focus,
 select:focus {
-  @apply outline-none ring-2 ring-blue-500 border-blue-500;
+  @apply outline-none ring-2 ring-primary-500 border-primary-500;
 }
 
 /* Custom button styles */
 .btn-primary {
-  @apply px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed;
+  @apply px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed;
 }
 
 .btn-secondary {

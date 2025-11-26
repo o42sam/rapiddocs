@@ -262,8 +262,7 @@ docker run -d \
   -v ~/rapiddocs/backend/generated_pdfs:/app/generated_pdfs \
   --env-file ~/rapiddocs/backend/.env \
   rapiddocs:latest
-
-# Check if container is running
+# Check if container is runnings
 docker ps
 
 # View logs

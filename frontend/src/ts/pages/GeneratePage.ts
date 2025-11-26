@@ -24,16 +24,16 @@ export class GeneratePage {
 
           <!-- Auth Warning (shown if not authenticated) -->
           ${!authState.isAuthenticated ? `
-            <div class="mb-8 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
+            <div class="mb-8 bg-primary-50 border-l-4 border-primary-400 p-4 rounded-lg">
               <div class="flex">
                 <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="h-5 w-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div class="ml-3">
-                  <p class="text-sm text-blue-700">
-                    <strong>Please log in to generate documents.</strong> You'll be redirected to the login page when you click "Generate Document". Don't have an account? <a href="/register" data-route="/register" class="font-semibold underline hover:text-blue-800">Sign up here</a>.
+                  <p class="text-sm text-primary-700">
+                    <strong>Please log in to generate documents.</strong> You'll be redirected to the login page when you click "Generate Document". Don't have an account? <a href="/register" data-route="/register" class="font-semibold underline hover:text-primary-800">Sign up here</a>.
                   </p>
                 </div>
               </div>
@@ -52,16 +52,20 @@ export class GeneratePage {
                 <textarea
                   id="description"
                   name="description"
-                  rows="4"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  placeholder="Describe the document you want to generate. For example: 'Create a quarterly business report highlighting our company's growth in the tech sector, focusing on innovation and market expansion.'"
+                  rows="5"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                  placeholder="Describe your document..."
                   required
                 ></textarea>
-                <p class="mt-1 text-xs text-gray-500">Minimum 10 characters, maximum 2000 characters</p>
+                <div id="description-guide" class="mt-2 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                  <p class="text-xs text-primary-900 font-medium mb-1">💡 Tips for best results:</p>
+                  <p id="description-guide-text" class="text-xs text-primary-800 leading-relaxed"></p>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Minimum 10 characters, maximum 2000 characters</p>
               </div>
 
               <!-- Document Length -->
-              <div>
+              <div id="length-container">
                 <label for="length" class="block text-sm font-medium text-gray-700 mb-2">
                   Document Length (words)
                   <span class="text-red-500">*</span>
@@ -73,7 +77,7 @@ export class GeneratePage {
                   min="500"
                   max="10000"
                   value="2000"
-                  class="w-full md:w-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  class="w-full md:w-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
                   required
                 />
                 <p class="mt-1 text-xs text-gray-500">Between 500 and 10,000 words</p>
@@ -81,76 +85,24 @@ export class GeneratePage {
 
               <!-- Document Type -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-3">
+                <label for="document-type-select" class="block text-sm font-medium text-gray-700 mb-2">
                   Document Type
                   <span class="text-red-500">*</span>
                 </label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <!-- Formal Option -->
-                  <label for="type-formal" class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 transition">
-                    <input type="radio" id="type-formal" name="document_type" value="formal" class="sr-only peer" />
-                    <span class="flex flex-1">
-                      <span class="flex flex-col">
-                        <span class="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          Formal Document
-                        </span>
-                        <span class="mt-1 text-xs text-gray-500">Professional text-only document with decorative lines. No images or charts.</span>
-                        <div class="mt-2 flex items-center justify-between gap-4">
-                          <span class="text-xs font-medium text-gray-600">⚡ ~60 seconds</span>
-                          ${authState.isAuthenticated ? `
-                          <span class="flex items-center gap-1 text-xs font-semibold text-blue-600">
-                            <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd" />
-                            </svg>
-                            34 credits
-                          </span>
-                          ` : ''}
-                        </div>
-                      </span>
-                    </span>
-                    <svg class="h-5 w-5 text-blue-600 opacity-0 peer-checked:opacity-100 absolute top-4 right-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="pointer-events-none absolute -inset-px rounded-lg border-2 border-transparent peer-checked:border-blue-500"></span>
-                  </label>
-
-                  <!-- Infographic Option -->
-                  <label for="type-infographic" class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 transition">
-                    <input type="radio" id="type-infographic" name="document_type" value="infographic" class="sr-only peer" checked />
-                    <span class="flex flex-1">
-                      <span class="flex flex-col">
-                        <span class="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                          </svg>
-                          Infographic Document
-                        </span>
-                        <span class="mt-1 text-xs text-gray-500">Rich visual document with AI images and data charts. Perfect for presentations.</span>
-                        <div class="mt-2 flex items-center justify-between gap-4">
-                          <span class="text-xs font-medium text-gray-600">⏱️ ~120 seconds</span>
-                          ${authState.isAuthenticated ? `
-                          <span class="flex items-center gap-1 text-xs font-semibold text-blue-600">
-                            <svg class="w-3.5 h-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd" />
-                            </svg>
-                            52 credits
-                          </span>
-                          ` : ''}
-                        </div>
-                      </span>
-                    </span>
-                    <svg class="h-5 w-5 text-blue-600 opacity-0 peer-checked:opacity-100 absolute top-4 right-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="pointer-events-none absolute -inset-px rounded-lg border-2 border-transparent peer-checked:border-blue-500"></span>
-                  </label>
-                </div>
+                <select
+                  id="document-type-select"
+                  name="document_type"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition bg-white"
+                  required
+                >
+                  <option value="formal">Formal Document - Text with decorative lines (⚡ ~60s, 34 credits)</option>
+                  <option value="infographic" selected>Infographic Document - Text + AI images + charts (⏱️ ~120s, 52 credits)</option>
+                  <option value="invoice">Invoice - Professional invoice with line items and totals (⚡ ~45s, 28 credits)</option>
+                </select>
                 <p class="mt-2 text-xs text-gray-600">
-                  <strong>Formal:</strong> Text + 3 decorative edge lines |
-                  <strong>Infographic:</strong> Text + AI images + data charts
+                  <strong>Formal:</strong> Professional text with decorative elements |
+                  <strong>Infographic:</strong> Visual document with AI images and data charts |
+                  <strong>Invoice:</strong> Structured billing document with itemized costs
                 </p>
               </div>
 
@@ -169,8 +121,8 @@ export class GeneratePage {
 
               <!-- Watermark Option -->
               <div id="watermark-container" class="hidden">
-                <div class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <input type="checkbox" id="use-watermark" name="use_watermark" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
+                <div class="flex items-center gap-3 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+                  <input type="checkbox" id="use-watermark" name="use_watermark" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-2 focus:ring-primary-500" />
                   <label for="use-watermark" class="flex-1 cursor-pointer">
                     <span class="text-sm font-medium text-gray-900">Use logo as watermark</span>
                     <p class="text-xs text-gray-600 mt-1">Display your logo as a semi-transparent watermark on all pages (except cover)</p>
@@ -221,17 +173,17 @@ export class GeneratePage {
 
             <!-- Loading Container -->
             <div id="loading-container" class="hidden mt-8">
-              <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div class="bg-primary-50 border border-primary-200 rounded-lg p-6">
                 <div class="flex items-center mb-4">
-                  <svg class="animate-spin h-5 w-5 text-blue-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg class="animate-spin h-5 w-5 text-primary-600 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <h3 class="text-lg font-semibold text-blue-800">Generating Your Document</h3>
+                  <h3 class="text-lg font-semibold text-primary-800">Generating Your Document</h3>
                 </div>
                 <div class="mb-3">
                   <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    <div id="progress-bar" class="bg-primary-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
                   </div>
                 </div>
                 <p id="progress-text" class="text-sm text-gray-700 font-medium">0% - Initializing...</p>
@@ -247,8 +199,8 @@ export class GeneratePage {
           <div id="auth-required-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
               <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-                  <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100">
+                  <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -261,7 +213,7 @@ export class GeneratePage {
                 <div class="items-center px-4 py-3 space-y-3">
                   <button
                     id="modal-register-btn"
-                    class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="px-4 py-2 bg-primary-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     Create Account
                   </button>
@@ -276,6 +228,42 @@ export class GeneratePage {
                     class="px-4 py-2 bg-white text-gray-500 text-sm font-medium rounded-md w-full hover:text-gray-700"
                   >
                     Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Logo Modal -->
+          <div id="no-logo-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+              <div class="mt-3">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                  <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4 text-center">No Logo Uploaded</h3>
+                <div class="mt-3 px-4 py-3">
+                  <p class="text-sm text-gray-600 text-center">
+                    You haven't uploaded a company logo yet. Documents with business logos appear more professional and strengthen your brand identity.
+                  </p>
+                  <p class="text-sm text-gray-600 text-center mt-3">
+                    Would you like to go back and add a logo, or continue without one?
+                  </p>
+                </div>
+                <div class="items-center px-4 py-3 space-y-2">
+                  <button
+                    id="modal-add-logo-btn"
+                    class="px-4 py-2 bg-primary-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                  >
+                    Add Logo
+                  </button>
+                  <button
+                    id="modal-continue-without-logo-btn"
+                    class="px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  >
+                    Continue Without Logo
                   </button>
                 </div>
               </div>
@@ -296,6 +284,9 @@ export class GeneratePage {
     this.setupGenerationListener();
     this.restoreFormData();
     this.setupCreditsCheck();
+    this.setupDescriptionGuide();
+    this.setupWatermarkToggle();
+    this.setupLengthVisibility();
   }
 
   private attachEventListeners(): void {
@@ -307,10 +298,11 @@ export class GeneratePage {
       });
     }
 
-    // Intercept form submission for unauthenticated users
+    // Intercept form submission for unauthenticated users and logo check
     const form = document.getElementById('document-form') as HTMLFormElement;
     if (form) {
       form.addEventListener('submit', (e) => {
+        // Check authentication first
         if (!authState.isAuthenticated) {
           e.preventDefault();
           e.stopPropagation();
@@ -320,6 +312,23 @@ export class GeneratePage {
           this.saveFormData();
 
           router.navigate('/login');
+          return false;
+        }
+
+        // Check if logo is required for document type
+        const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+        const logoInput = document.getElementById('logo-input') as HTMLInputElement;
+        const documentType = documentTypeSelect?.value;
+        const hasLogo = !!(logoInput?.files && logoInput.files.length > 0);
+        const supportsWatermark = documentType === 'formal' || documentType === 'invoice';
+
+        // Show modal if document supports watermark but no logo uploaded
+        if (supportsWatermark && !hasLogo) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          this.showNoLogoModal();
           return false;
         }
       }, true); // Use capture phase to intercept before DocumentForm
@@ -375,6 +384,24 @@ export class GeneratePage {
         this.hideAuthModal();
       });
     }
+
+    // No Logo Modal buttons
+    const modalAddLogoBtn = document.getElementById('modal-add-logo-btn');
+    const modalContinueWithoutLogoBtn = document.getElementById('modal-continue-without-logo-btn');
+
+    if (modalAddLogoBtn) {
+      modalAddLogoBtn.addEventListener('click', () => {
+        this.hideNoLogoModal();
+        this.scrollToAndHighlightLogo();
+      });
+    }
+
+    if (modalContinueWithoutLogoBtn) {
+      modalContinueWithoutLogoBtn.addEventListener('click', () => {
+        this.hideNoLogoModal();
+        this.proceedWithGeneration();
+      });
+    }
   }
 
   private setupGenerationListener(): void {
@@ -408,6 +435,79 @@ export class GeneratePage {
     }
   }
 
+  private showNoLogoModal(): void {
+    const modal = document.getElementById('no-logo-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+    }
+  }
+
+  private hideNoLogoModal(): void {
+    const modal = document.getElementById('no-logo-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  private scrollToAndHighlightLogo(): void {
+    const logoSection = document.getElementById('logo-input')?.parentElement?.parentElement;
+    if (logoSection) {
+      // Scroll to logo section with smooth behavior
+      logoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Add halo effect with animation
+      const haloClass = 'animate-halo';
+
+      // Add inline styles for the animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes halo-pulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            border-color: #3b82f6;
+          }
+          50% {
+            box-shadow: 0 0 0 15px rgba(59, 130, 246, 0);
+            border-color: #60a5fa;
+          }
+        }
+        .animate-halo {
+          animation: halo-pulse 2s ease-in-out 3;
+          border: 2px solid #3b82f6;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          transition: all 0.3s ease;
+        }
+      `;
+
+      if (!document.getElementById('halo-animation-style')) {
+        style.id = 'halo-animation-style';
+        document.head.appendChild(style);
+      }
+
+      // Apply the animation
+      logoSection.classList.add(haloClass);
+
+      // Remove the animation after it completes (2s * 3 iterations = 6s)
+      setTimeout(() => {
+        logoSection.classList.remove(haloClass);
+      }, 6000);
+    }
+  }
+
+  private proceedWithGeneration(): void {
+    // Trigger form submission programmatically
+    const form = document.getElementById('document-form') as HTMLFormElement;
+    if (form) {
+      // Create and dispatch a submit event
+      const submitEvent = new Event('submit', {
+        bubbles: true,
+        cancelable: true
+      });
+      form.dispatchEvent(submitEvent);
+    }
+  }
+
   private saveFormData(): void {
     const form = document.getElementById('document-form') as HTMLFormElement;
     if (!form) return;
@@ -415,7 +515,7 @@ export class GeneratePage {
     const formData: any = {
       description: (document.getElementById('description') as HTMLTextAreaElement)?.value || '',
       length: (document.getElementById('length') as HTMLInputElement)?.value || '2000',
-      documentType: (document.querySelector('input[name="document_type"]:checked') as HTMLInputElement)?.value || 'infographic',
+      documentType: (document.getElementById('document-type-select') as HTMLSelectElement)?.value || 'infographic',
       useWatermark: (document.getElementById('use-watermark') as HTMLInputElement)?.checked || false,
     };
 
@@ -447,9 +547,9 @@ export class GeneratePage {
 
       // Restore document type
       if (formData.documentType) {
-        const typeRadio = document.querySelector(`input[name="document_type"][value="${formData.documentType}"]`) as HTMLInputElement;
-        if (typeRadio) {
-          typeRadio.checked = true;
+        const typeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+        if (typeSelect) {
+          typeSelect.value = formData.documentType;
         }
       }
 
@@ -475,12 +575,13 @@ export class GeneratePage {
 
     const DOCUMENT_COSTS = {
       formal: 34,
-      infographic: 52
+      infographic: 52,
+      invoice: 28
     };
 
     const updateCreditsCheck = () => {
-      const documentTypeRadio = document.querySelector('input[name="document_type"]:checked') as HTMLInputElement;
-      const documentType = documentTypeRadio?.value || 'infographic';
+      const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+      const documentType = documentTypeSelect?.value || 'infographic';
       const cost = DOCUMENT_COSTS[documentType as keyof typeof DOCUMENT_COSTS];
       const userCredits = authState.user?.credits ?? 0;
 
@@ -511,10 +612,10 @@ export class GeneratePage {
     updateCreditsCheck();
 
     // Update when document type changes
-    const documentTypeRadios = document.querySelectorAll('input[name="document_type"]');
-    documentTypeRadios.forEach(radio => {
-      radio.addEventListener('change', updateCreditsCheck);
-    });
+    const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+    if (documentTypeSelect) {
+      documentTypeSelect.addEventListener('change', updateCreditsCheck);
+    }
 
     // Listen for credits updates (after purchase)
     authState.subscribe((isAuthenticated, user) => {
@@ -523,6 +624,140 @@ export class GeneratePage {
         updateCreditsCheck();
       }
     });
+  }
+
+  private setupDescriptionGuide(): void {
+    const DESCRIPTION_GUIDES = {
+      formal: `
+        <strong>Be specific and structured:</strong> Describe the purpose, key topics, and target audience.
+        Include section names you want (e.g., "Executive Summary, Market Analysis, Financial Overview").
+        Mention the tone (professional, authoritative, persuasive).
+        <br><br>
+        <strong>Example:</strong> "Create a comprehensive business proposal for a SaaS product launch.
+        Include sections on market opportunity, product features, competitive analysis, pricing strategy,
+        and implementation timeline. Use a professional, persuasive tone targeting C-level executives."
+      `,
+      infographic: `
+        <strong>Focus on visual themes and data:</strong> Describe the main topic and visual style you want.
+        Mention specific concepts that should be illustrated with images.
+        Be clear about what data points should be visualized as charts.
+        <br><br>
+        <strong>Example:</strong> "Create a marketing infographic about sustainable energy solutions.
+        Show images of solar panels and wind turbines. Include charts comparing renewable vs traditional energy costs,
+        and visualize our 40% carbon reduction achievement. Use clean, modern visuals with eco-friendly themes."
+      `,
+      invoice: `
+        <strong>Provide transaction details:</strong> Include your business name and address (if available),
+        comma-separated items with their prices and quantities, customer name, and preferred invoice date
+        (if different from today's date).
+        <br><br>
+        <strong>Example:</strong> "Fashion Boutique Ltd, 456 Style Avenue, Los Angeles, CA.
+        Items: Blue Denim Jeans ($45 x 2), White Cotton T-Shirt ($25 x 3), Black Leather Jacket ($120 x 1),
+        Red Summer Dress ($60 x 2). Customer: Sarah Johnson. Date: November 23, 2025."
+      `
+    };
+
+    const updateGuide = () => {
+      const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+      const guideText = document.getElementById('description-guide-text');
+
+      if (!documentTypeSelect || !guideText) return;
+
+      const documentType = documentTypeSelect.value as keyof typeof DESCRIPTION_GUIDES;
+      guideText.innerHTML = DESCRIPTION_GUIDES[documentType] || DESCRIPTION_GUIDES.infographic;
+    };
+
+    // Initial update
+    updateGuide();
+
+    // Update when document type changes
+    const documentTypeSelect = document.getElementById('document-type-select');
+    if (documentTypeSelect) {
+      documentTypeSelect.addEventListener('change', updateGuide);
+    }
+  }
+
+  private setupWatermarkToggle(): void {
+    let hasLogo = false;
+
+    const updateWatermarkVisibility = () => {
+      const watermarkContainer = document.getElementById('watermark-container');
+      const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+      const watermarkCheckbox = document.getElementById('use-watermark') as HTMLInputElement;
+
+      if (!watermarkContainer || !documentTypeSelect) return;
+
+      const documentType = documentTypeSelect.value;
+      const supportsWatermark = documentType === 'formal' || documentType === 'invoice';
+
+      // Show watermark checkbox only if:
+      // 1. Document type is formal or invoice
+      // 2. Logo has been uploaded
+      if (supportsWatermark && hasLogo) {
+        watermarkContainer.classList.remove('hidden');
+      } else {
+        watermarkContainer.classList.add('hidden');
+        // Uncheck watermark if hiding
+        if (watermarkCheckbox) {
+          watermarkCheckbox.checked = false;
+        }
+      }
+    };
+
+    // Listen for logo file selection
+    const logoInput = document.getElementById('logo-input') as HTMLInputElement;
+    if (logoInput) {
+      logoInput.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        hasLogo = !!(target.files && target.files.length > 0);
+        updateWatermarkVisibility();
+      });
+    }
+
+    // Listen for document type changes
+    const documentTypeSelect = document.getElementById('document-type-select');
+    if (documentTypeSelect) {
+      documentTypeSelect.addEventListener('change', updateWatermarkVisibility);
+    }
+
+    // Initial check
+    updateWatermarkVisibility();
+  }
+
+  private setupLengthVisibility(): void {
+    const updateLengthVisibility = () => {
+      const lengthContainer = document.getElementById('length-container');
+      const lengthInput = document.getElementById('length') as HTMLInputElement;
+      const documentTypeSelect = document.getElementById('document-type-select') as HTMLSelectElement;
+
+      if (!lengthContainer || !documentTypeSelect) return;
+
+      const documentType = documentTypeSelect.value;
+
+      // Hide length field for invoices (invoices don't have word count)
+      if (documentType === 'invoice') {
+        lengthContainer.classList.add('hidden');
+        // Remove required attribute when hidden
+        if (lengthInput) {
+          lengthInput.removeAttribute('required');
+        }
+      } else {
+        lengthContainer.classList.remove('hidden');
+        // Re-add required attribute when visible
+        if (lengthInput) {
+          lengthInput.setAttribute('required', 'required');
+        }
+      }
+    };
+
+    // Listen for document type changes
+    const documentTypeSelect = document.getElementById('document-type-select');
+    if (documentTypeSelect) {
+      documentTypeSelect.addEventListener('change', updateLengthVisibility);
+    }
+
+    // Initial check
+    updateLengthVisibility();
   }
 
   destroy(): void {

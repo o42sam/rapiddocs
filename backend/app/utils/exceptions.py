@@ -37,3 +37,11 @@ class StorageError(DocumentGenerationError):
 class ValidationError(DocumentGenerationError):
     """Raised when input validation fails"""
     pass
+
+
+class PaymentError(Exception):
+    """Raised when payment processing fails"""
+    def __init__(self, message: str, details: dict = None):
+        self.message = message
+        self.details = details or {}
+        super().__init__(self.message)

@@ -417,10 +417,10 @@ class PDFGeneratorService:
             logger.info(f"Starting PDF generation: type={document_type}, title={title}")
 
             # Validate document type
-            if document_type not in ['formal', 'infographic']:
+            if document_type not in ['formal', 'infographic', 'invoice']:
                 raise PDFGenerationError(
                     f"Invalid document_type: {document_type}",
-                    details={'valid_types': ['formal', 'infographic']}
+                    details={'valid_types': ['formal', 'infographic', 'invoice']}
                 )
 
             # Reset header counter for each document
