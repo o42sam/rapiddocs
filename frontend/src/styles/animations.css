@@ -300,3 +300,25 @@
     border-color: currentColor;
   }
 }
+
+/* Mouse-following blinking cursor */
+#mouse-cursor {
+  position: fixed;
+  width: 6px;
+  height: 40px;
+  background-color: #2563eb;
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+  transition: left 0.1s ease-out, top 0.1s ease-out;
+  animation: mouseCursorBlink 1s ease-in-out infinite;
+}
+
+@keyframes mouseCursorBlink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
