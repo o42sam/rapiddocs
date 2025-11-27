@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Screen Test - RapidDocs</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Liberation Serif', Georgia, serif;
+      background: #f9fafb;
+    }
+
+    /* Loading screen animations */
+    .pulsating-logo {
+      animation: rapidPulsate 1.2s ease-in-out infinite;
+    }
+
+    @keyframes rapidPulsate {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.08);
+        opacity: 0.85;
+      }
+    }
+
+    .pulsating-logo img {
+      filter: drop-shadow(0 0 8px rgba(0, 68, 170, 0.3));
+      animation: logoGlow 1.2s ease-in-out infinite;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(0, 68, 170, 0.3));
+      }
+      50% {
+        filter: drop-shadow(0 0 16px rgba(0, 68, 170, 0.6));
+      }
+    }
+
+    #loading-progress-bar {
+      position: relative;
+      overflow: hidden;
+    }
+
+    #loading-progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+      );
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        left: -100%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+
+    #loading-screen {
+      opacity: 0;
+      animation: fadeInLoading 0.3s ease-out forwards;
+    }
+
+    @keyframes fadeInLoading {
+      to {
+        opacity: 1;
+      }
+    }
+
+    .test-container {
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    button {
+      background: #0044aa;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 8px;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #0055cc;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 68, 170, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Loading Screen Test</h1>
+    <p>Click the buttons below to test the loading screen:</p>
+
+    <button onclick="showLoading()">Show Loading Screen</button>
+    <button onclick="hideLoading()">Hide Loading Screen</button>
+    <button onclick="testFullCycle()">Test Full Cycle (3 seconds)</button>
+    <button onclick="testWithProgress()">Test with Manual Progress</button>
+  </div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" style="display: none; position: fixed; inset: 0; z-index: 50; background: white; flex-direction: column; align-items: center; justify-content: center;">
+    <!-- Progress Bar Container -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: #e5e7eb; overflow: hidden;">
+      <div id="loading-progress-bar" style="height: 100%; background: linear-gradient(to right, #0044aa, #0055cc, #0044aa); transition: width 0.3s ease-out; width: 0%;"></div>
+    </div>
+
+    <!-- Pulsating Logo Container -->
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <!-- RapidDocs Logo with Pulsating Animation -->
+      <div class="pulsating-logo" style="margin-bottom: 1.5rem;">
+        <img src="/rd-logo.svg" alt="RapidDocs Logo" style="width: 128px; height: 128px; object-fit: contain;" />
+      </div>
+
+      <!-- Loading Text -->
+      <div style="text-align: center;">
+        <p style="font-size: 1.25rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">Loading...</p>
+        <p style="font-size: 0.875rem; color: #6b7280;">Please wait while we prepare your page</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loadingScreen = document.getElementById('loading-screen');
+    const progressBar = document.getElementById('loading-progress-bar');
+    let progress = 0;
+    let intervalId = null;
+
+    function showLoading() {
+      progress = 0;
+      updateProgressBar();
+      loadingScreen.style.display = 'flex';
+      startProgressAnimation();
+    }
+
+    function hideLoading() {
+      progress = 100;
+      updateProgressBar();
+
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+
+      setTimeout(() => {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.transition = 'opacity 0.3s ease-out';
+
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+          loadingScreen.style.opacity = '1';
+          loadingScreen.style.transition = '';
+        }, 300);
+      }, 200);
+    }
+
+    function updateProgressBar() {
+      progressBar.style.width = `${progress}%`;
+    }
+
+    function startProgressAnimation() {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+      }
+
+      intervalId = setInterval(() => {
+        if (progress < 90) {
+          const increment = Math.max(0.5, (90 - progress) / 20);
+          progress = Math.min(90, progress + increment);
+          updateProgressBar();
+        }
+      }, 50);
+    }
+
+    function testFullCycle() {
+      showLoading();
+      setTimeout(hideLoading, 3000);
+    }
+
+    function testWithProgress() {
+      showLoading();
+      let manualProgress = 0;
+      const manualInterval = setInterval(() => {
+        manualProgress += 10;
+        progress = manualProgress;
+        updateProgressBar();
+
+        if (manualProgress >= 100) {
+          clearInterval(manualInterval);
+          hideLoading();
+        }
+      }, 300);
+    }
+  </script>
+</body>
+</html>

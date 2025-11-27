@@ -2,6 +2,8 @@
  * Simple client-side router
  */
 
+import { loadingScreen } from './components/LoadingScreen';
+
 type RouteHandler = () => void | Promise<void>;
 
 interface Route {
@@ -13,10 +15,16 @@ interface Route {
 class Router {
   private routes: Route[] = [];
   private currentPath: string = '/';
+  private isInitialized: boolean = false;
 
   constructor() {
     window.addEventListener('popstate', () => this.handleRoute());
-    window.addEventListener('DOMContentLoaded', () => this.handleRoute());
+    window.addEventListener('DOMContentLoaded', () => {
+      // Mount loading screen to DOM
+      loadingScreen.mount();
+      this.isInitialized = true;
+      this.handleRoute();
+    });
   }
 
   register(path: string, handler: RouteHandler, requiresAuth: boolean = false): void {
@@ -33,6 +41,11 @@ class Router {
     const path = window.location.pathname;
     this.currentPath = path;
 
+    // Show loading screen if initialized
+    if (this.isInitialized) {
+      loadingScreen.show();
+    }
+
     // Find matching route
     const route = this.routes.find(r => {
       if (r.path === path) return true;
@@ -43,20 +56,32 @@ class Router {
       return routeParts.every((part, i) => part.startsWith(':') || part === pathParts[i]);
     });
 
-    if (route) {
-      // Check authentication
-      if (route.requiresAuth) {
-        const { authState } = await import('./auth/authState');
-        if (!authState.isAuthenticated) {
-          this.navigate('/login');
-          return;
+    try {
+      if (route) {
+        // Check authentication
+        if (route.requiresAuth) {
+          const { authState } = await import('./auth/authState');
+          if (!authState.isAuthenticated) {
+            this.navigate('/login');
+            return;
+          }
         }
-      }
 
-      await route.handler();
-    } else {
-      // 404 - redirect to home
-      this.navigate('/');
+        // Execute route handler
+        await route.handler();
+      } else {
+        // 404 - redirect to home
+        this.navigate('/');
+        return;
+      }
+    } finally {
+      // Hide loading screen after route is handled
+      // Add a small delay to ensure the page has rendered
+      setTimeout(() => {
+        if (this.isInitialized) {
+          loadingScreen.hide();
+        }
+      }, 100);
     }
   }
 

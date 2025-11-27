@@ -112,3 +112,18 @@ if os.path.exists(static_dir):
     @app.get("/rd-logo.svg")
     async def serve_rd_logo():
         return FileResponse(os.path.join(static_dir, "rd-logo.svg"))
+
+    # Catch-all route for SPA (Single Page Application) routing
+    # This must be last to allow other routes to match first
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """
+        Serve the SPA for all non-API routes.
+        This allows client-side routing to work correctly.
+        """
+        # Don't interfere with API routes
+        if full_path.startswith("api/"):
+            return {"detail": "Not Found"}
+
+        # Serve index.html for all other routes
+        return FileResponse(os.path.join(static_dir, "index.html"))

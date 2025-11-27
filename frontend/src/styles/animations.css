@@ -322,3 +322,79 @@
     opacity: 0;
   }
 }
+
+/* Loading screen animations */
+
+/* Pulsating logo animation - rapid pulse effect */
+.pulsating-logo {
+  animation: rapidPulsate 1.2s ease-in-out infinite;
+}
+
+@keyframes rapidPulsate {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.85;
+  }
+}
+
+/* Alternative pulsating with glow effect */
+.pulsating-logo img {
+  filter: drop-shadow(0 0 8px rgba(0, 68, 170, 0.3));
+  animation: logoGlow 1.2s ease-in-out infinite;
+}
+
+@keyframes logoGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(0, 68, 170, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(0, 68, 170, 0.6));
+  }
+}
+
+/* Progress bar shimmer effect */
+#loading-progress-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+#loading-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Loading screen fade in/out */
+#loading-screen {
+  opacity: 0;
+  animation: fadeInLoading 0.3s ease-out forwards;
+}
+
+@keyframes fadeInLoading {
+  to {
+    opacity: 1;
+  }
+}
