@@ -64,65 +64,80 @@ class GoogleOAuthService {
 
   /**
    * Handle OAuth callback from Google
-   * Exchanges code for tokens and authenticates user
+   * Backend redirects here with tokens in URL after successful authentication
    */
   async handleCallback(): Promise<void> {
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+    const oauthSuccess = urlParams.get('oauth_success');
     const error = urlParams.get('error');
 
-    // Check for errors
+    // Check for errors from backend
     if (error) {
-      throw new Error(`Google authorization failed: ${error}`);
+      let errorMessage = 'Google authorization failed';
+      switch (error) {
+        case 'missing_code':
+          errorMessage = 'Authorization code is missing';
+          break;
+        case 'invalid_state':
+          errorMessage = 'Invalid state token - possible security issue';
+          break;
+        case 'token_exchange_failed':
+          errorMessage = 'Failed to exchange authorization code';
+          break;
+        case 'no_access_token':
+          errorMessage = 'Access token not received';
+          break;
+        case 'failed_to_get_user_info':
+          errorMessage = 'Failed to get user information from Google';
+          break;
+        case 'missing_user_info':
+          errorMessage = 'Required user information missing';
+          break;
+        case 'server_error':
+          errorMessage = 'Server error during authentication';
+          break;
+        default:
+          errorMessage = `Google authorization failed: ${error}`;
+      }
+      throw new Error(errorMessage);
     }
 
-    // Validate required parameters
-    if (!code || !state) {
-      throw new Error('Missing authorization code or state');
+    // Validate that we have tokens from successful OAuth
+    if (!oauthSuccess || !accessToken || !refreshToken) {
+      throw new Error('Authentication failed - tokens not received');
     }
-
-    // Verify state token
-    const storedState = sessionStorage.getItem('google_oauth_state');
-    if (state !== storedState) {
-      throw new Error('Invalid state token - possible CSRF attack');
-    }
-
-    // Clean up stored state
-    sessionStorage.removeItem('google_oauth_state');
 
     try {
-      // Exchange code for tokens via backend
-      const response = await axios.get<AuthResponse>(
-        `${API_BASE_URL}/auth/google/callback`,
-        {
-          params: { code, state }
-        }
-      );
-
-      const { user, tokens } = response.data;
-
       // Store tokens
-      localStorage.setItem('access_token', tokens.access_token);
-      localStorage.setItem('refresh_token', tokens.refresh_token);
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+
+      // Fetch user information with the new token
+      const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
 
       // Set authenticated state
-      authState.setAuthenticated(user);
+      authState.setAuthenticated(response.data);
 
-      // Get redirect URL or default to /generate
-      const redirectTo = sessionStorage.getItem('oauth_redirect_after') || '/generate';
-      sessionStorage.removeItem('oauth_redirect_after');
+      // Clean up URL by removing token parameters (for security)
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
 
       // Small delay to ensure state propagates
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Navigate to destination
-      router.navigate(redirectTo);
+      console.log('OAuth authentication successful');
     } catch (error: any) {
-      console.error('OAuth callback failed:', error);
-      throw new Error(
-        error.response?.data?.detail || 'Failed to complete Google sign in'
-      );
+      console.error('Failed to fetch user info after OAuth:', error);
+      // Clear potentially invalid tokens
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      throw new Error('Failed to complete authentication');
     }
   }
 
@@ -131,7 +146,11 @@ class GoogleOAuthService {
    */
   isOAuthCallback(): boolean {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.has('code') && urlParams.has('state');
+    // Check for either OAuth success with tokens or OAuth error
+    return (
+      urlParams.has('oauth_success') ||
+      (urlParams.has('error') && urlParams.get('error') !== null)
+    );
   }
 }
 

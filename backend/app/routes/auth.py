@@ -354,6 +354,7 @@ async def google_callback(
 ):
     """
     Handle Google OAuth2 callback
+    Redirects to frontend with authentication result
 
     Args:
         code: Authorization code from Google
@@ -361,138 +362,127 @@ async def google_callback(
         error: Error message if authorization failed
 
     Returns:
-        AuthResponse with user data and tokens
+        Redirect to frontend with auth tokens or error
     """
+    # Determine frontend base URL from settings or use default
+    frontend_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:5173"
+
     # Check for authorization errors
     if error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google authorization failed: {error}"
-        )
+        error_url = f"{frontend_url}/login?error={error}"
+        return RedirectResponse(url=error_url)
 
     # Validate required parameters
     if not code:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Authorization code is missing"
-        )
+        error_url = f"{frontend_url}/login?error=missing_code"
+        return RedirectResponse(url=error_url)
 
     # Validate state token (CSRF protection)
     if not state or state not in state_tokens:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid state token"
-        )
+        error_url = f"{frontend_url}/login?error=invalid_state"
+        return RedirectResponse(url=error_url)
 
     # Remove used state token
     state_tokens.pop(state, None)
 
-    # Exchange code for access token
-    token_data = await exchange_code_for_token(code, settings.GOOGLE_REDIRECT_URI)
-    if not token_data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to exchange authorization code for token"
-        )
+    try:
+        # Exchange code for access token
+        token_data = await exchange_code_for_token(code, settings.GOOGLE_REDIRECT_URI)
+        if not token_data:
+            error_url = f"{frontend_url}/login?error=token_exchange_failed"
+            return RedirectResponse(url=error_url)
 
-    access_token = token_data.get("access_token")
-    if not access_token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Access token not found in response"
-        )
+        access_token = token_data.get("access_token")
+        if not access_token:
+            error_url = f"{frontend_url}/login?error=no_access_token"
+            return RedirectResponse(url=error_url)
 
-    # Get user information from Google
-    google_user = await get_google_user_info(access_token)
-    if not google_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to get user information from Google"
-        )
+        # Get user information from Google
+        google_user = await get_google_user_info(access_token)
+        if not google_user:
+            error_url = f"{frontend_url}/login?error=failed_to_get_user_info"
+            return RedirectResponse(url=error_url)
 
-    # Check required fields
-    google_id = google_user.get("id")
-    email = google_user.get("email")
-    if not google_id or not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Required user information missing from Google"
-        )
+        # Check required fields
+        google_id = google_user.get("id")
+        email = google_user.get("email")
+        if not google_id or not email:
+            error_url = f"{frontend_url}/login?error=missing_user_info"
+            return RedirectResponse(url=error_url)
 
-    # Get database
-    db = get_database()
+        # Get database
+        db = get_database()
 
-    # Check if user exists by Google ID or email
-    existing_user = await db.users.find_one({
-        "$or": [
-            {"oauth_id": google_id, "oauth_provider": "google"},
-            {"email": email.lower()}
-        ]
-    })
+        # Check if user exists by Google ID or email
+        existing_user = await db.users.find_one({
+            "$or": [
+                {"oauth_id": google_id, "oauth_provider": "google"},
+                {"email": email.lower()}
+            ]
+        })
 
-    if existing_user:
-        # User exists - login
-        user = User(**existing_user)
+        if existing_user:
+            # User exists - login
+            user = User(**existing_user)
 
-        # Update last login and ensure OAuth fields are set
-        await db.users.update_one(
-            {"_id": user.id},
-            {
-                "$set": {
-                    "last_login": datetime.utcnow(),
-                    "oauth_provider": "google",
-                    "oauth_id": google_id,
-                    "profile_picture": google_user.get("picture"),
-                    "is_verified": True  # Google emails are verified
+            # Update last login and ensure OAuth fields are set
+            await db.users.update_one(
+                {"_id": user.id},
+                {
+                    "$set": {
+                        "last_login": datetime.utcnow(),
+                        "oauth_provider": "google",
+                        "oauth_id": google_id,
+                        "profile_picture": google_user.get("picture"),
+                        "is_verified": True  # Google emails are verified
+                    }
                 }
-            }
+            )
+        else:
+            # User doesn't exist - create new user
+            username = generate_username_from_email(email, google_id)
+
+            # Ensure username is unique
+            counter = 1
+            base_username = username
+            while await db.users.find_one({"username": username}):
+                username = f"{base_username}{counter}"
+                counter += 1
+
+            user = User(
+                email=email.lower(),
+                username=username,
+                hashed_password=None,  # No password for OAuth users
+                full_name=google_user.get("name"),
+                is_active=True,
+                is_verified=True,  # Google emails are verified
+                oauth_provider="google",
+                oauth_id=google_id,
+                profile_picture=google_user.get("picture"),
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+
+            # Insert into database
+            result = await db.users.insert_one(user.model_dump(by_alias=True, exclude={"id"}))
+            user.id = result.inserted_id
+
+        # Create tokens
+        tokens = create_tokens(str(user.id), user.email)
+
+        # Redirect to frontend with tokens (document generation page)
+        # Frontend will extract tokens from URL and store them
+        import urllib.parse
+        redirect_url = (
+            f"{frontend_url}/generate?"
+            f"access_token={urllib.parse.quote(tokens['access_token'])}&"
+            f"refresh_token={urllib.parse.quote(tokens['refresh_token'])}&"
+            f"oauth_success=true"
         )
-    else:
-        # User doesn't exist - create new user
-        username = generate_username_from_email(email, google_id)
 
-        # Ensure username is unique
-        counter = 1
-        base_username = username
-        while await db.users.find_one({"username": username}):
-            username = f"{base_username}{counter}"
-            counter += 1
+        return RedirectResponse(url=redirect_url)
 
-        user = User(
-            email=email.lower(),
-            username=username,
-            hashed_password=None,  # No password for OAuth users
-            full_name=google_user.get("name"),
-            is_active=True,
-            is_verified=True,  # Google emails are verified
-            oauth_provider="google",
-            oauth_id=google_id,
-            profile_picture=google_user.get("picture"),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-
-        # Insert into database
-        result = await db.users.insert_one(user.model_dump(by_alias=True, exclude={"id"}))
-        user.id = result.inserted_id
-
-    # Create tokens
-    tokens = create_tokens(str(user.id), user.email)
-
-    # Create response
-    user_response = UserResponse(
-        id=str(user.id),
-        email=user.email,
-        username=user.username,
-        full_name=user.full_name,
-        credits=user.credits,
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-        created_at=user.created_at.isoformat(),
-        oauth_provider=user.oauth_provider,
-        profile_picture=user.profile_picture
-    )
-
-    token_response = TokenResponse(**tokens)
-
-    return AuthResponse(user=user_response, tokens=token_response)
+    except Exception as e:
+        print(f"Error in Google OAuth callback: {e}")
+        error_url = f"{frontend_url}/login?error=server_error"
+        return RedirectResponse(url=error_url)

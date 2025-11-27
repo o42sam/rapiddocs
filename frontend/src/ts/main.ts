@@ -28,6 +28,26 @@ if (googleOAuthService.isOAuthCallback()) {
 
     try {
       await googleOAuthService.handleCallback();
+
+      // After successful callback handling, show success and redirect
+      if (app) {
+        app.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-purple-50">
+            <div class="text-center">
+              <div class="text-green-600 text-5xl mb-4">✓</div>
+              <h2 class="text-2xl font-bold text-gray-900 mb-2">Sign In Successful!</h2>
+              <p class="text-gray-600 mb-6">Redirecting to document generation...</p>
+            </div>
+          </div>
+        `;
+      }
+
+      // Wait a moment before navigating to show success message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Navigate to generate page (router will handle rendering)
+      router.navigate('/generate');
+
     } catch (error) {
       console.error('OAuth callback error:', error);
       if (app) {

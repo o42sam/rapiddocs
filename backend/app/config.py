@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    FRONTEND_URL: str = "http://localhost:5173"  # Frontend base URL for OAuth redirects
 
     # Authentication / JWT
     JWT_SECRET_KEY: str = "your-secret-key-here-change-in-production"
