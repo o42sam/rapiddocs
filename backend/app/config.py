@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 10
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
-    FRONTEND_URL: str = "http://localhost:5173"  # Frontend base URL for OAuth redirects
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
+    FRONTEND_URL: str = "http://localhost:5174"  # Frontend base URL for OAuth redirects
 
     # Authentication / JWT
     JWT_SECRET_KEY: str = "your-secret-key-here-change-in-production"
