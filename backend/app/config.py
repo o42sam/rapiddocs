@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # 30 days
 
+    # Google OAuth2
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
+
     # Bitcoin Payment Configuration
     BITCOIN_NETWORK: str = "testnet"  # "mainnet" or "testnet"
     BITCOIN_PERSONAL_WALLET: str = ""  # Your personal wallet address for fund forwarding

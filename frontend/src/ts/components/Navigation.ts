@@ -21,7 +21,7 @@ export class Navigation {
     const isAuthenticated = authState.isAuthenticated;
     const user = authState.user;
 
-    this.element.className = 'fixed top-0 left-0 right-0 bg-gray-50 z-50 nav-fade-in';
+    this.element.className = 'fixed top-0 left-0 right-0 bg-gray-50 shadow-md z-50 nav-fade-in';
     this.element.innerHTML = `
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
@@ -35,25 +35,9 @@ export class Navigation {
 
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center space-x-8">
-            <!-- About Menu -->
-            <div class="relative group">
-              <button class="text-gray-700 hover:text-primary-600 font-medium transition-colors flex items-center">
-                About
-                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-                <div class="py-1">
-                  <a href="/" data-scroll="about-developer" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors">
-                    Developer
-                  </a>
-                  <a href="/" data-scroll="about-product" class="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors">
-                    Product
-                  </a>
-                </div>
-              </div>
-            </div>
+            <a href="/" data-scroll="about-product" class="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+              About
+            </a>
 
             ${isAuthenticated ? `
               <a href="/generate" class="text-gray-700 hover:text-primary-600 font-medium transition-colors" data-route="/generate">
@@ -120,15 +104,9 @@ export class Navigation {
         <!-- Mobile menu -->
         <div id="mobile-menu" class="md:hidden ${this.mobileMenuOpen ? 'block slide-down' : 'hidden'}">
           <div class="px-2 pt-2 pb-3 space-y-1">
-            <div class="space-y-1">
-              <div class="text-gray-700 font-medium px-3 py-2">About</div>
-              <a href="/" data-scroll="about-developer" class="block pl-6 pr-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
-                Developer
-              </a>
-              <a href="/" data-scroll="about-product" class="block pl-6 pr-3 py-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
-                Product
-              </a>
-            </div>
+            <a href="/" data-scroll="about-product" class="block px-3 py-2 text-gray-700 hover:text-primary-600 hover:bg-primary-50 rounded-md font-medium transition-colors">
+              About
+            </a>
 
             ${isAuthenticated ? `
               <div class="flex items-center justify-between px-3 py-2 text-gray-700 font-medium">

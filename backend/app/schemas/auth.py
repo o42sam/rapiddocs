@@ -97,6 +97,8 @@ class UserResponse(BaseModel):
     is_active: bool
     is_verified: bool
     created_at: str
+    oauth_provider: Optional[str] = None
+    profile_picture: Optional[str] = None
 
     class Config:
         json_schema_extra = {
@@ -108,7 +110,9 @@ class UserResponse(BaseModel):
                 "credits": 40,
                 "is_active": True,
                 "is_verified": False,
-                "created_at": "2025-01-15T10:30:00Z"
+                "created_at": "2025-01-15T10:30:00Z",
+                "oauth_provider": None,
+                "profile_picture": None
             }
         }
 
@@ -173,3 +177,29 @@ class TokenData(BaseModel):
     user_id: Optional[str] = None
     email: Optional[str] = None
     token_type: Optional[str] = None  # "access" or "refresh"
+
+
+class GoogleAuthRequest(BaseModel):
+    """Schema for Google OAuth callback"""
+    code: str
+    state: Optional[str] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "code": "4/0AX4XfWhPn...",
+                "state": "random_state_string"
+            }
+        }
+
+
+class GoogleUserInfo(BaseModel):
+    """Schema for Google user information"""
+    id: str
+    email: str
+    verified_email: bool
+    name: str
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    picture: Optional[str] = None
+    locale: Optional[str] = None

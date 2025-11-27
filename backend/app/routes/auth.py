@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 from datetime import datetime
+from typing import Optional
 from app.schemas.auth import (
     UserRegisterRequest,
     UserLoginRequest,
@@ -7,7 +9,8 @@ from app.schemas.auth import (
     TokenRefreshRequest,
     UserResponse,
     AuthResponse,
-    PasswordChangeRequest
+    PasswordChangeRequest,
+    GoogleAuthRequest
 )
 from app.models.user import User
 from app.utils.security import (
@@ -18,9 +21,20 @@ from app.utils.security import (
 )
 from app.utils.dependencies import get_current_user, get_current_active_user
 from app.database import get_database
+from app.config import settings
+from app.services.google_oauth import (
+    generate_state_token,
+    get_google_auth_url,
+    exchange_code_for_token,
+    get_google_user_info,
+    generate_username_from_email
+)
 from bson import ObjectId
 
 router = APIRouter()
+
+# Store state tokens temporarily (in production, use Redis or database)
+state_tokens = {}
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -302,3 +316,183 @@ async def logout_user(current_user: User = Depends(get_current_user)):
     # 3. Clear any session data
 
     return {"message": "Logged out successfully"}
+
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    """
+    Initiate Google OAuth2 login flow
+
+    Returns:
+        Redirect to Google OAuth authorization URL
+    """
+    # Validate that Google OAuth is configured
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET."
+        )
+
+    # Generate state token for CSRF protection
+    state = generate_state_token()
+    state_tokens[state] = True  # Store state token
+
+    # Get redirect URI from settings
+    redirect_uri = settings.GOOGLE_REDIRECT_URI
+
+    # Generate authorization URL
+    auth_url = get_google_auth_url(redirect_uri, state)
+
+    return {"authorization_url": auth_url, "state": state}
+
+
+@router.get("/google/callback")
+async def google_callback(
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+    error: Optional[str] = None
+):
+    """
+    Handle Google OAuth2 callback
+
+    Args:
+        code: Authorization code from Google
+        state: State token for CSRF protection
+        error: Error message if authorization failed
+
+    Returns:
+        AuthResponse with user data and tokens
+    """
+    # Check for authorization errors
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google authorization failed: {error}"
+        )
+
+    # Validate required parameters
+    if not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Authorization code is missing"
+        )
+
+    # Validate state token (CSRF protection)
+    if not state or state not in state_tokens:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid state token"
+        )
+
+    # Remove used state token
+    state_tokens.pop(state, None)
+
+    # Exchange code for access token
+    token_data = await exchange_code_for_token(code, settings.GOOGLE_REDIRECT_URI)
+    if not token_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to exchange authorization code for token"
+        )
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Access token not found in response"
+        )
+
+    # Get user information from Google
+    google_user = await get_google_user_info(access_token)
+    if not google_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to get user information from Google"
+        )
+
+    # Check required fields
+    google_id = google_user.get("id")
+    email = google_user.get("email")
+    if not google_id or not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Required user information missing from Google"
+        )
+
+    # Get database
+    db = get_database()
+
+    # Check if user exists by Google ID or email
+    existing_user = await db.users.find_one({
+        "$or": [
+            {"oauth_id": google_id, "oauth_provider": "google"},
+            {"email": email.lower()}
+        ]
+    })
+
+    if existing_user:
+        # User exists - login
+        user = User(**existing_user)
+
+        # Update last login and ensure OAuth fields are set
+        await db.users.update_one(
+            {"_id": user.id},
+            {
+                "$set": {
+                    "last_login": datetime.utcnow(),
+                    "oauth_provider": "google",
+                    "oauth_id": google_id,
+                    "profile_picture": google_user.get("picture"),
+                    "is_verified": True  # Google emails are verified
+                }
+            }
+        )
+    else:
+        # User doesn't exist - create new user
+        username = generate_username_from_email(email, google_id)
+
+        # Ensure username is unique
+        counter = 1
+        base_username = username
+        while await db.users.find_one({"username": username}):
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        user = User(
+            email=email.lower(),
+            username=username,
+            hashed_password=None,  # No password for OAuth users
+            full_name=google_user.get("name"),
+            is_active=True,
+            is_verified=True,  # Google emails are verified
+            oauth_provider="google",
+            oauth_id=google_id,
+            profile_picture=google_user.get("picture"),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+
+        # Insert into database
+        result = await db.users.insert_one(user.model_dump(by_alias=True, exclude={"id"}))
+        user.id = result.inserted_id
+
+    # Create tokens
+    tokens = create_tokens(str(user.id), user.email)
+
+    # Create response
+    user_response = UserResponse(
+        id=str(user.id),
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        credits=user.credits,
+        is_active=user.is_active,
+        is_verified=user.is_verified,
+        created_at=user.created_at.isoformat(),
+        oauth_provider=user.oauth_provider,
+        profile_picture=user.profile_picture
+    )
+
+    token_response = TokenResponse(**tokens)
+
+    return AuthResponse(user=user_response, tokens=token_response)

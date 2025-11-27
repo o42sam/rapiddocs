@@ -2,6 +2,7 @@ import { router } from '../router';
 
 export class Hero {
   private element: HTMLElement;
+  private typingTimeout?: number;
 
   constructor() {
     this.element = document.createElement('section');
@@ -16,20 +17,18 @@ export class Hero {
         <div class="text-center max-w-4xl mx-auto">
           <!-- Main Heading -->
           <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 hero-title-fade">
-            Transform Your Ideas Into
-            <span class="block mt-2 bg-gradient-to-r from-primary-600 via-primary-500 to-primary-400 bg-clip-text text-transparent font-extrabold">
-              Professional Documents
+            <span id="typing-text" class="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-400 bg-clip-text text-transparent font-extrabold inline-block typing-active">
             </span>
           </h1>
 
           <!-- Subheading -->
-          <p class="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto hero-subtitle-fade">
+          <p class="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto hero-subtitle-delayed">
             AI-powered document generation with stunning visualizations and custom branding.
             Create beautiful PDFs in seconds.
           </p>
 
           <!-- CTA Buttons -->
-          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center hero-button-fade">
+          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center hero-button-delayed">
             <button
               id="generate-now-btn"
               class="btn-primary w-full sm:w-auto"
@@ -89,6 +88,33 @@ export class Hero {
         router.navigate('/generate');
       });
     }
+
+    // Start typing animation immediately
+    setTimeout(() => {
+      this.startTypingAnimation();
+    }, 300);
+  }
+
+  private startTypingAnimation(): void {
+    const text = 'Transform Your Ideas Into Professional Documents';
+    const typingElement = this.element.querySelector('#typing-text');
+
+    if (!typingElement) return;
+
+    let charIndex = 0;
+
+    const typeNextChar = () => {
+      if (charIndex < text.length) {
+        typingElement.textContent = text.substring(0, charIndex + 1);
+        charIndex++;
+        this.typingTimeout = window.setTimeout(typeNextChar, 50); // 50ms per character
+      } else {
+        // Remove the blinking cursor when typing is complete
+        typingElement.classList.remove('typing-active');
+      }
+    };
+
+    typeNextChar();
   }
 
   mount(parent: HTMLElement): void {
@@ -96,6 +122,10 @@ export class Hero {
   }
 
   unmount(): void {
+    // Clean up typing timeout
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+    }
     this.element.remove();
   }
 

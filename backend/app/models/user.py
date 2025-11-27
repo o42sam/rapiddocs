@@ -26,7 +26,7 @@ class User(BaseModel):
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     email: str  # Using string for database storage
     username: str
-    hashed_password: str
+    hashed_password: Optional[str] = None  # Optional for OAuth users
     full_name: Optional[str] = None
     credits: int = 40  # Default 40 free credits for new users
     is_active: bool = True
@@ -34,6 +34,11 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     last_login: Optional[datetime] = None
+
+    # OAuth2 fields
+    oauth_provider: Optional[str] = None  # "google", "github", etc.
+    oauth_id: Optional[str] = None  # Provider's user ID
+    profile_picture: Optional[str] = None  # Profile picture URL
 
     class Config:
         populate_by_name = True

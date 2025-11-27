@@ -1,8 +1,10 @@
 import { router } from '../router';
 import { authService } from '../auth/authService';
 import { authState } from '../auth/authState';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export class LoginPage {
+  private googleButton?: GoogleSignInButton;
   render(): void {
     const app = document.getElementById('app');
     if (!app) return;
@@ -94,6 +96,23 @@ export class LoginPage {
                   <div class="w-full border-t border-gray-300"></div>
                 </div>
                 <div class="relative flex justify-center text-sm">
+                  <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Google Sign In -->
+            <div id="google-signin-container" class="mt-6">
+              <!-- Google button will be inserted here -->
+            </div>
+
+            <!-- Divider -->
+            <div class="mt-6">
+              <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
                   <span class="px-2 bg-white text-gray-500">Don't have an account?</span>
                 </div>
               </div>
@@ -132,6 +151,32 @@ export class LoginPage {
         e.preventDefault();
         router.navigate('/register');
       });
+    }
+
+    // Add Google Sign-In button
+    this.setupGoogleSignIn();
+  }
+
+  private setupGoogleSignIn(): void {
+    const container = document.getElementById('google-signin-container');
+    if (!container) return;
+
+    // Create Google button with error handler
+    this.googleButton = new GoogleSignInButton('Sign in with Google', (error) => {
+      const errorMessage = document.getElementById('error-message');
+      if (errorMessage) {
+        errorMessage.textContent = error.message || 'Failed to sign in with Google';
+        errorMessage.classList.remove('hidden');
+      }
+    });
+
+    // Insert button HTML
+    container.innerHTML = this.googleButton.getHTML();
+
+    // Attach event listener
+    const button = container.querySelector('.google-signin-btn') as HTMLButtonElement;
+    if (button) {
+      this.googleButton.attachEventListener(button);
     }
   }
 

@@ -58,48 +58,7 @@ export class HomePage {
             </p>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <!-- About Developer -->
-            <div id="about-developer" class="bg-white p-8 rounded-xl shadow-lg card-hover" data-animate>
-              <div class="flex items-center mb-6">
-                <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mr-4">
-                  <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                  </svg>
-                </div>
-                <h3 class="text-2xl font-bold text-gray-900">About the Developer</h3>
-              </div>
-
-              <div class="space-y-4">
-                <div class="flex items-start">
-                  <svg class="w-6 h-6 text-primary-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  <p class="text-gray-600">
-                    Built with passion by developers who understand the pain of creating professional documents manually.
-                  </p>
-                </div>
-
-                <div class="flex items-start">
-                  <svg class="w-6 h-6 text-primary-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <p class="text-gray-600">
-                    We've leveraged cutting-edge AI technology to automate the entire document creation process.
-                  </p>
-                </div>
-
-                <div class="flex items-start">
-                  <svg class="w-6 h-6 text-primary-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <p class="text-gray-600">
-                    Our team combines expertise in machine learning, design, and document generation to deliver professional quality.
-                  </p>
-                </div>
-              </div>
-            </div>
-
+          <div class="max-w-3xl mx-auto">
             <!-- About Product -->
             <div id="about-product" class="bg-white p-8 rounded-xl shadow-lg card-hover" data-animate>
               <div class="flex items-center mb-6">
@@ -196,8 +155,7 @@ export class HomePage {
             <div>
               <h4 class="text-white font-semibold mb-4">Company</h4>
               <ul class="space-y-2">
-                <li><a href="/about-developer" class="text-sm hover:text-white transition-colors">About Us</a></li>
-                <li><a href="/about-product" class="text-sm hover:text-white transition-colors">About Product</a></li>
+                <li><a href="/" data-scroll="about-product" class="text-sm hover:text-white transition-colors">About</a></li>
                 <li><a href="#" class="text-sm hover:text-white transition-colors">Careers</a></li>
                 <li><a href="#" class="text-sm hover:text-white transition-colors">Contact</a></li>
               </ul>
