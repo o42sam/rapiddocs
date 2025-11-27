@@ -1,33 +1,11 @@
 import axios from 'axios';
 import { authState } from './authState';
-import { router } from '../router';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 interface GoogleAuthResponse {
   authorization_url: string;
   state: string;
-}
-
-interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    username: string;
-    full_name: string | null;
-    credits: number;
-    is_active: boolean;
-    is_verified: boolean;
-    oauth_provider: string | null;
-    profile_picture: string | null;
-    created_at: string;
-  };
-  tokens: {
-    access_token: string;
-    refresh_token: string;
-    token_type: string;
-    expires_in: number;
-  };
 }
 
 class GoogleOAuthService {
