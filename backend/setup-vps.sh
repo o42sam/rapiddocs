@@ -35,6 +35,31 @@ log_step() {
     echo -e "${BLUE}[STEP]${NC} $1"
 }
 
+# Detect OS type
+detect_os() {
+    OS_ID=$(lsb_release -si 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "unknown")
+    OS_CODENAME=$(lsb_release -cs 2>/dev/null || echo "unknown")
+    OS_VERSION=$(lsb_release -sr 2>/dev/null || echo "unknown")
+
+    log_info "Detected OS: $OS_ID ($OS_CODENAME) version $OS_VERSION"
+
+    # Check if OS is supported
+    case "$OS_ID" in
+        ubuntu|debian|kali|parrot)
+            log_info "Supported OS detected: $OS_ID"
+            ;;
+        *)
+            log_warn "This script is designed for Ubuntu/Debian/Kali Linux"
+            log_warn "Running on $OS_ID may require manual adjustments"
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+            ;;
+    esac
+}
+
 # Check if running as root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -58,40 +83,134 @@ update_system() {
 install_system_packages() {
     log_step "Installing system packages..."
 
-    # Note: We do NOT install python3-pip globally to avoid
-    # "externally managed environment" issues on Ubuntu 23.04+
-    apt install -y \
-        python3 \
-        python3-venv \
-        python3-dev \
-        build-essential \
-        git \
-        nginx \
-        certbot \
-        python3-certbot-nginx \
-        supervisor \
-        postgresql \
-        postgresql-contrib \
-        redis-server \
-        ufw \
-        htop \
-        ncdu \
-        curl \
-        wget \
-        vim \
-        tmux \
-        fail2ban \
-        unattended-upgrades \
-        lsb-release \
+    # Common packages for all distros
+    COMMON_PACKAGES=(
+        python3
+        python3-venv
+        python3-dev
+        build-essential
+        git
+        nginx
+        curl
+        wget
+        vim
+        tmux
+        lsb-release
         gnupg
+    )
 
-    log_info "System packages installed"
+    # Distro-specific packages
+    case "$OS_ID" in
+        kali|parrot)
+            log_info "Installing packages for $OS_ID Linux..."
+            # Kali/Parrot have different package names for some services
+            apt install -y "${COMMON_PACKAGES[@]}"
+
+            # Install additional packages, but don't fail if some are missing
+            apt install -y htop ncdu || log_warn "Some utility packages not available"
+
+            # Kali may not have all these by default
+            apt install -y postgresql postgresql-contrib || log_warn "PostgreSQL not installed"
+            apt install -y redis-server || log_warn "Redis not installed"
+            apt install -y ufw || log_warn "UFW firewall not installed"
+            apt install -y supervisor || log_warn "Supervisor not installed"
+
+            # Certbot may need different installation on Kali
+            if ! apt install -y certbot python3-certbot-nginx 2>/dev/null; then
+                log_warn "Certbot not available from apt, will try snap or pip later"
+                # Try to install certbot via snap or pip in setup_ssl function
+            fi
+
+            # Kali doesn't have unattended-upgrades by default
+            apt install -y unattended-upgrades || log_warn "Unattended upgrades not available"
+
+            # Fail2ban is available on Kali
+            apt install -y fail2ban || log_warn "fail2ban not installed"
+            ;;
+        ubuntu|debian)
+            log_info "Installing packages for $OS_ID..."
+            # Ubuntu/Debian have all standard packages
+            apt install -y \
+                "${COMMON_PACKAGES[@]}" \
+                certbot \
+                python3-certbot-nginx \
+                supervisor \
+                postgresql \
+                postgresql-contrib \
+                redis-server \
+                ufw \
+                htop \
+                ncdu \
+                fail2ban \
+                unattended-upgrades
+            ;;
+        *)
+            log_warn "Unknown OS, attempting standard package installation..."
+            apt install -y "${COMMON_PACKAGES[@]}"
+            # Try to install other packages without failing
+            for pkg in certbot python3-certbot-nginx supervisor postgresql postgresql-contrib redis-server ufw htop ncdu fail2ban unattended-upgrades; do
+                apt install -y $pkg || log_warn "Package $pkg not installed"
+            done
+            ;;
+    esac
+
+    log_info "System packages installation completed"
 }
 
 # Configure firewall
 setup_firewall() {
     log_step "Configuring firewall..."
 
+    # Check if UFW is installed
+    if ! command -v ufw &> /dev/null; then
+        log_warn "UFW firewall not found"
+
+        # For Kali Linux, use iptables directly
+        if [[ "$OS_ID" == "kali" ]] || [[ "$OS_ID" == "parrot" ]]; then
+            log_info "Configuring iptables firewall for $OS_ID..."
+
+            # Basic iptables rules
+            iptables -F  # Flush existing rules
+            iptables -X  # Delete custom chains
+
+            # Default policies
+            iptables -P INPUT DROP
+            iptables -P FORWARD DROP
+            iptables -P OUTPUT ACCEPT
+
+            # Allow loopback
+            iptables -A INPUT -i lo -j ACCEPT
+            iptables -A OUTPUT -o lo -j ACCEPT
+
+            # Allow established connections
+            iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+            # Allow SSH (port 22)
+            iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+            # Allow HTTP and HTTPS
+            iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+            iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+
+            # Save iptables rules
+            if command -v iptables-save &> /dev/null; then
+                iptables-save > /etc/iptables/rules.v4 2>/dev/null || {
+                    mkdir -p /etc/iptables
+                    iptables-save > /etc/iptables/rules.v4
+                }
+            fi
+
+            # Install iptables-persistent to restore rules on boot
+            apt install -y iptables-persistent || log_warn "Could not install iptables-persistent"
+
+            log_info "Firewall configured with iptables"
+        else
+            log_warn "No firewall configured. Please install and configure a firewall manually."
+        fi
+        return 0
+    fi
+
+    # UFW is installed, proceed with UFW configuration
     # Reset UFW
     ufw --force reset
 
@@ -109,7 +228,7 @@ setup_firewall() {
     # Enable firewall
     ufw --force enable
 
-    log_info "Firewall configured"
+    log_info "Firewall configured with UFW"
 }
 
 # Create application user
@@ -189,25 +308,104 @@ EOF
 setup_mongodb_client() {
     log_step "Installing MongoDB client tools..."
 
-    # Install gnupg if not already installed (required for key management)
-    apt install -y gnupg
+    # Check if we're on Kali Linux, Debian, or Ubuntu
+    OS_ID=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+    OS_CODENAME=$(lsb_release -cs)
+    OS_VERSION=$(lsb_release -sr 2>/dev/null || echo "unknown")
 
-    # Use modern method for adding MongoDB repository key (apt-key is deprecated)
-    # Download and add the MongoDB public GPG key
-    curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | \
-        gpg --dearmor -o /usr/share/keyrings/mongodb-server-6.0.gpg
+    # Check for Kali Linux or other Debian-based systems
+    if [[ "$OS_ID" == "kali" ]] || [[ "$OS_ID" == "parrot" ]]; then
+        log_warn "$OS_ID Linux detected - using alternative MongoDB client installation"
+        log_info "Since you're using MongoDB Atlas (cloud), local MongoDB tools are optional"
 
-    # Create the list file with signed-by option
-    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | \
-        tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+        # Try to install MongoDB tools from the default repositories if available
+        apt update
+        if apt-cache show mongodb-clients &>/dev/null; then
+            apt install -y mongodb-clients || log_warn "MongoDB clients not available in repository"
+        fi
+
+        # Try mongosh from npm as an alternative
+        if command -v npm &>/dev/null; then
+            log_info "Installing mongosh via npm..."
+            npm install -g mongosh || log_warn "mongosh installation via npm failed"
+        else
+            log_info "You can connect to MongoDB Atlas directly from your application without client tools"
+        fi
+
+        return 0
+    fi
+
+    # For Debian, use appropriate repository
+    if [[ "$OS_ID" == "debian" ]]; then
+        # Install gnupg if not already installed
+        apt install -y gnupg
+
+        # Download and add the MongoDB public GPG key
+        curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | \
+            gpg --dearmor -o /usr/share/keyrings/mongodb-server-6.0.gpg
+
+        # Map Debian codenames to appropriate versions
+        case "$OS_CODENAME" in
+            "bookworm") MONGO_CODENAME="bookworm" ;;  # Debian 12
+            "bullseye") MONGO_CODENAME="bullseye" ;;  # Debian 11
+            "buster") MONGO_CODENAME="buster" ;;      # Debian 10
+            *)
+                log_warn "Unknown Debian version, attempting with bullseye repository"
+                MONGO_CODENAME="bullseye"
+                ;;
+        esac
+
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/debian $MONGO_CODENAME/mongodb-org/6.0 main" | \
+            tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+    else
+        # For Ubuntu, proceed with MongoDB client installation
+        # Install gnupg if not already installed (required for key management)
+        apt install -y gnupg
+
+        # Use modern method for adding MongoDB repository key (apt-key is deprecated)
+        # Download and add the MongoDB public GPG key
+        curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | \
+            gpg --dearmor -o /usr/share/keyrings/mongodb-server-6.0.gpg
+
+        # Create the list file with signed-by option
+        # For Ubuntu, use the codename. Map non-LTS versions to the nearest LTS.
+        case "$OS_CODENAME" in
+            "noble")  # Ubuntu 24.04 LTS
+                MONGO_CODENAME="jammy"  # Use 22.04 repo until 24.04 is supported
+                log_warn "Ubuntu 24.04 detected, using 22.04 MongoDB repository"
+                ;;
+            "jammy"|"kinetic"|"lunar"|"mantic")
+                MONGO_CODENAME="jammy"  # Ubuntu 22.04 LTS
+                ;;
+            "focal"|"groovy"|"hirsute"|"impish")
+                MONGO_CODENAME="focal"  # Ubuntu 20.04 LTS
+                ;;
+            *)
+                log_warn "Unknown Ubuntu version, attempting with jammy repository"
+                MONGO_CODENAME="jammy"
+                ;;
+        esac
+
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu $MONGO_CODENAME/mongodb-org/6.0 multiverse" | \
+            tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+    fi
 
     # Update package list
     apt update
 
     # Install MongoDB client tools
-    apt install -y mongodb-mongosh mongodb-database-tools
+    apt install -y mongodb-mongosh mongodb-database-tools || {
+        log_warn "MongoDB client tools installation failed - continuing without them"
+        log_info "Since you're using MongoDB Atlas, this is not critical"
 
-    log_info "MongoDB client tools installed"
+        # Try alternative installation methods
+        if ! command -v mongosh &>/dev/null && command -v npm &>/dev/null; then
+            log_info "Attempting to install mongosh via npm as fallback..."
+            npm install -g mongosh || log_warn "mongosh npm installation failed"
+        fi
+    }
+
+    log_info "MongoDB client tools installation completed"
 }
 
 # Configure Nginx
@@ -293,6 +491,42 @@ EOF
 # Setup SSL with Let's Encrypt
 setup_ssl() {
     log_step "Setting up SSL certificates..."
+
+    # Check if certbot is installed
+    if ! command -v certbot &> /dev/null; then
+        log_warn "Certbot not found, attempting alternative installation..."
+
+        # Try different installation methods based on OS
+        case "$OS_ID" in
+            kali|parrot)
+                # Try snap first
+                if command -v snap &> /dev/null; then
+                    log_info "Installing certbot via snap..."
+                    snap install core
+                    snap refresh core
+                    snap install --classic certbot
+                    ln -sf /snap/bin/certbot /usr/bin/certbot 2>/dev/null || true
+                fi
+
+                # If snap failed, try pip
+                if ! command -v certbot &> /dev/null; then
+                    log_info "Installing certbot via pip..."
+                    python3 -m pip install certbot certbot-nginx || log_warn "Certbot pip installation failed"
+                fi
+
+                # Final check
+                if ! command -v certbot &> /dev/null; then
+                    log_error "Could not install certbot. Please install it manually."
+                    log_info "Skipping SSL setup. You can run this later manually."
+                    return 1
+                fi
+                ;;
+            *)
+                log_error "Certbot not found. Please install it manually."
+                return 1
+                ;;
+        esac
+    fi
 
     # Check if domain is provided
     if [ "$DOMAIN" = "api.rapiddocs.io" ]; then
@@ -670,9 +904,10 @@ show_final_instructions() {
 # Main execution
 main() {
     log_info "Starting DocGen VPS Setup"
-    log_info "This script will configure Ubuntu 22.04 for DocGen backend"
+    log_info "This script will configure Ubuntu/Debian/Kali Linux for DocGen backend"
 
     check_root
+    detect_os  # New: Detect OS type first
     update_system
     install_system_packages
     setup_firewall
