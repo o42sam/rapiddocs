@@ -101,6 +101,6 @@ demo_*.py
 *.bak
 *.tmp
 
-# Markdown files (documentation)
+# Markdown files (documentation) - ignore all .md files except README.md
 *.md
-!CLAUDE.md
+!README.md
