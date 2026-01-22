@@ -81,7 +81,9 @@ install_system_packages() {
         vim \
         tmux \
         fail2ban \
-        unattended-upgrades
+        unattended-upgrades \
+        lsb-release \
+        gnupg
 
     log_info "System packages installed"
 }
@@ -187,10 +189,22 @@ EOF
 setup_mongodb_client() {
     log_step "Installing MongoDB client tools..."
 
-    # Install MongoDB client for backups
-    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+    # Install gnupg if not already installed (required for key management)
+    apt install -y gnupg
+
+    # Use modern method for adding MongoDB repository key (apt-key is deprecated)
+    # Download and add the MongoDB public GPG key
+    curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | \
+        gpg --dearmor -o /usr/share/keyrings/mongodb-server-6.0.gpg
+
+    # Create the list file with signed-by option
+    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | \
+        tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
+    # Update package list
     apt update
+
+    # Install MongoDB client tools
     apt install -y mongodb-mongosh mongodb-database-tools
 
     log_info "MongoDB client tools installed"
