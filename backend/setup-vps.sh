@@ -58,9 +58,10 @@ update_system() {
 install_system_packages() {
     log_step "Installing system packages..."
 
+    # Note: We do NOT install python3-pip globally to avoid
+    # "externally managed environment" issues on Ubuntu 23.04+
     apt install -y \
         python3 \
-        python3-pip \
         python3-venv \
         python3-dev \
         build-essential \
@@ -151,13 +152,35 @@ create_app_user() {
 setup_python() {
     log_step "Setting up Python environment..."
 
-    # Upgrade pip
-    python3 -m pip install --upgrade pip
+    # Create a virtual environment for system tools to avoid
+    # "externally managed environment" error on Ubuntu 23.04+
+    log_info "Creating virtual environment for application..."
 
-    # Install global Python packages
-    pip3 install virtualenv gunicorn supervisor
+    # Switch to app user for Python setup
+    su - $APP_USER << 'EOF'
+cd /home/docgen/backend
+python3 -m venv venv
+source venv/bin/activate
 
-    log_info "Python environment configured"
+# Upgrade pip within virtual environment
+python -m pip install --upgrade pip
+
+# Install required Python packages in venv
+pip install gunicorn uvicorn[standard] supervisor
+
+# Deactivate for now
+deactivate
+EOF
+
+    # For system-wide tools, use apt or pipx
+    apt install -y python3-pip 2>/dev/null || true
+
+    # If pipx is available, use it for system tools
+    if command -v pipx &> /dev/null; then
+        pipx install supervisor
+    fi
+
+    log_info "Python environment configured (using virtual environment)"
 }
 
 # Configure MongoDB (using cloud MongoDB Atlas)
