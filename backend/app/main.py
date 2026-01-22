@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 import os
 
 from app.config import settings
-from app.database import connect_to_mongo, close_mongo_connection
-from app.routes import documents, generation, upload, auth, credits, bitcoin, paystack
-from app.services.bitcoin_payment_processor import bitcoin_payment_processor
+# from app.database import connect_to_mongo, close_mongo_connection
+# Routes will be added once presentation layer is complete
+# from app.presentation.routes import invoice_routes, infographic_routes, formal_routes
 import asyncio
 
 # Debug: Print environment variables at startup
@@ -33,20 +33,20 @@ print("=" * 50)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await connect_to_mongo()
+    # await connect_to_mongo()
 
     # Create necessary directories
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     os.makedirs(settings.PDF_OUTPUT_DIR, exist_ok=True)
 
     # Start Bitcoin payment background processor
-    processor_task = asyncio.create_task(bitcoin_payment_processor.start_background_processor())
+    # processor_task = asyncio.create_task(bitcoin_payment_processor.start_background_processor())
 
     yield
 
     # Shutdown
-    bitcoin_payment_processor.stop_background_processor()
-    await close_mongo_connection()
+    # bitcoin_payment_processor.stop_background_processor()
+    # await close_mongo_connection()
 
 
 app = FastAPI(
@@ -73,13 +73,14 @@ if os.path.exists(settings.PDF_OUTPUT_DIR):
     app.mount("/pdfs", StaticFiles(directory=settings.PDF_OUTPUT_DIR), name="pdfs")
 
 # Include routers
-app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["authentication"])
-app.include_router(credits.router, prefix=f"{settings.API_PREFIX}/credits", tags=["credits"])
-app.include_router(bitcoin.router, prefix=f"{settings.API_PREFIX}/bitcoin", tags=["bitcoin-payments"])
-app.include_router(paystack.router, prefix=settings.API_PREFIX, tags=["paystack-payments"])
-app.include_router(documents.router, prefix=settings.API_PREFIX, tags=["documents"])
-app.include_router(generation.router, prefix=settings.API_PREFIX, tags=["generation"])
-app.include_router(upload.router, prefix=settings.API_PREFIX, tags=["upload"])
+# app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["authentication"])
+# app.include_router(admin.router, prefix=f"{settings.API_PREFIX}/admin", tags=["admin"])
+# app.include_router(credits.router, prefix=f"{settings.API_PREFIX}/credits", tags=["credits"])
+# app.include_router(bitcoin.router, prefix=f"{settings.API_PREFIX}/bitcoin", tags=["bitcoin-payments"])
+# app.include_router(paystack.router, prefix=settings.API_PREFIX, tags=["paystack-payments"])
+# app.include_router(documents.router, prefix=settings.API_PREFIX, tags=["documents"])
+# app.include_router(generation.router, prefix=settings.API_PREFIX, tags=["generation"])
+# app.include_router(upload.router, prefix=settings.API_PREFIX, tags=["upload"])
 
 
 @app.get("/health")

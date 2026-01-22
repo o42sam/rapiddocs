@@ -36,11 +36,16 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5174"  # Frontend base URL for OAuth redirects
 
     # Authentication / JWT
+    SECRET_KEY: str = "your-secret-key-here-change-in-production"  # Used for admin JWT
+    ALGORITHM: str = "HS256"  # Used for admin JWT
     JWT_SECRET_KEY: str = "your-secret-key-here-change-in-production"
     JWT_REFRESH_SECRET_KEY: str = "your-refresh-secret-key-here-change-in-production"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # 30 days
+
+    # Admin
+    ADMIN_SECRET_KEY: str = "change-this-admin-secret-key-in-production"  # Secret for admin registration
 
     # Google OAuth2
     GOOGLE_CLIENT_ID: str = ""

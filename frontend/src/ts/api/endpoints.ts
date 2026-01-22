@@ -7,7 +7,7 @@ import {
 } from '../types/document';
 
 export const documentApi = {
-  async generateDocument(request: DocumentGenerationRequest): Promise<GenerationJobResponse> {
+  async generateDocument(request: DocumentGenerationRequest & { skip_validation?: boolean }): Promise<GenerationJobResponse> {
     const formData = new FormData();
     formData.append('description', request.description);
     formData.append('length', request.length.toString());
@@ -18,6 +18,10 @@ export const documentApi = {
 
     if (request.logo) {
       formData.append('logo', request.logo);
+    }
+
+    if (request.skip_validation !== undefined) {
+      formData.append('skip_validation', request.skip_validation.toString());
     }
 
     const response = await apiClient.post<GenerationJobResponse>(

@@ -1,6 +1,7 @@
 import { Hero } from '../components/Hero';
 import { initScrollAnimations } from '../utils/intersectionObserver';
 import { MouseCursor } from '../utils/mouseCursor';
+import { router } from '../router';
 
 export class HomePage {
   private hero: Hero;
@@ -168,8 +169,8 @@ export class HomePage {
             <div>
               <h4 class="text-white font-semibold mb-4">Legal</h4>
               <ul class="space-y-2">
-                <li><a href="#" class="text-sm hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" class="text-sm hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="/privacy-policy" class="text-sm hover:text-white transition-colors footer-link">Privacy Policy</a></li>
+                <li><a href="/terms-of-service" class="text-sm hover:text-white transition-colors footer-link">Terms of Service</a></li>
                 <li><a href="#" class="text-sm hover:text-white transition-colors">Cookie Policy</a></li>
                 <li><a href="#" class="text-sm hover:text-white transition-colors">GDPR</a></li>
               </ul>
@@ -199,6 +200,22 @@ export class HomePage {
 
     // Initialize scroll animations
     initScrollAnimations();
+
+    // Add click handlers for footer legal links
+    this.attachFooterLinkHandlers();
+  }
+
+  private attachFooterLinkHandlers(): void {
+    const footerLinks = document.querySelectorAll('.footer-link');
+    footerLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = (e.currentTarget as HTMLAnchorElement).getAttribute('href');
+        if (href) {
+          router.navigate(href);
+        }
+      });
+    });
   }
 
   private renderFeatureCard(title: string, description: string, iconPath: string, color: string): string {

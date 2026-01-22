@@ -27,7 +27,11 @@ export interface GenerationJobResponse {
   job_id: string;
   status: string;
   message: string;
-  estimated_time_seconds: number;
+  estimated_time_seconds?: number;
+  missing_fields?: string[];
+  extracted_data?: any;
+  document_type?: string;
+  credits_used?: number;
 }
 
 export interface JobStatusResponse {

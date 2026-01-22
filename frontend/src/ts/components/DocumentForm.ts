@@ -139,8 +139,18 @@ export class DocumentForm {
       return;
     }
 
+    // For invoices, validate the prompt first
+    let skipValidation = false;
+    if (document_type === 'invoice') {
+      const validationResult = await this.validateInvoicePrompt(description);
+      if (!validationResult.proceed) {
+        return; // User chose not to proceed
+      }
+      skipValidation = validationResult.skipValidation || false;
+    }
+
     // Build request
-    const request: DocumentGenerationRequest = {
+    const request: DocumentGenerationRequest & { skip_validation?: boolean } = {
       description,
       length,
       document_type,
@@ -148,6 +158,7 @@ export class DocumentForm {
       statistics: this.statisticsForm.getStatistics(),
       design_spec: this.colorPalette.getSelectedTheme(),
       logo,
+      skip_validation: skipValidation,
     };
 
     // Submit
@@ -178,8 +189,24 @@ export class DocumentForm {
 
       // Generate document
       const response = await documentApi.generateDocument(request);
-      this.currentJobId = response.job_id;
-      this.startStatusPolling();
+
+      // Check if validation failed on backend
+      if (response.status === 'validation_failed') {
+        // Show validation dialog with missing fields
+        const dialogResult = await this.showIncompleteDataDialog(response.missing_fields || []);
+        if (!dialogResult.proceed) {
+          this.showLoading(false);
+          return;
+        }
+        // Retry with skip_validation flag
+        request.skip_validation = true;
+        const retryResponse = await documentApi.generateDocument(request);
+        this.currentJobId = retryResponse.job_id;
+        this.startStatusPolling();
+      } else {
+        this.currentJobId = response.job_id;
+        this.startStatusPolling();
+      }
     } catch (error: any) {
       this.showErrors([error.response?.data?.detail || 'Failed to start document generation']);
       this.showLoading(false);
@@ -334,5 +361,102 @@ export class DocumentForm {
     if (resultDiv) {
       resultDiv.innerHTML = '';
     }
+  }
+
+  private async validateInvoicePrompt(description: string): Promise<{ proceed: boolean, skipValidation?: boolean }> {
+    try {
+      // Create form data for validation
+      const formData = new FormData();
+      formData.append('description', description);
+
+      const response = await fetch('http://localhost:8000/api/v1/validate/invoice', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!result.is_complete) {
+        // Show dialog with missing fields
+        return await this.showIncompleteDataDialog(result.missing_fields);
+      }
+
+      return { proceed: true };
+    } catch (error) {
+      console.error('Validation failed:', error);
+      // If validation fails, let user proceed anyway
+      return { proceed: true };
+    }
+  }
+
+  private showIncompleteDataDialog(missingFields: string[]): Promise<{ proceed: boolean, skipValidation?: boolean }> {
+    return new Promise((resolve) => {
+      // Add halo effect to description field
+      const descriptionField = document.getElementById('description');
+      if (descriptionField) {
+        descriptionField.classList.add('halo-effect');
+      }
+
+      // Create dialog overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+      overlay.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div class="flex items-start mb-4">
+            <svg class="w-6 h-6 text-yellow-500 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">Incomplete Invoice Information</h3>
+              <p class="text-sm text-gray-600 mb-3">The following information is missing or using placeholders:</p>
+              <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 mb-4">
+                ${missingFields.map(field => `<li>${field}</li>`).join('')}
+              </ul>
+              <p class="text-sm text-gray-600">Would you like to continue anyway or update your description?</p>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button id="dialog-cancel" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition">
+              Update Description
+            </button>
+            <button id="dialog-proceed" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              Continue Anyway
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      // Handle dialog buttons
+      const cancelBtn = document.getElementById('dialog-cancel');
+      const proceedBtn = document.getElementById('dialog-proceed');
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          document.body.removeChild(overlay);
+          // Keep halo effect and focus the description field
+          if (descriptionField) {
+            (descriptionField as HTMLTextAreaElement).focus();
+            // Remove halo after a delay
+            setTimeout(() => {
+              descriptionField.classList.remove('halo-effect');
+            }, 3000);
+          }
+          resolve({ proceed: false });
+        });
+      }
+
+      if (proceedBtn) {
+        proceedBtn.addEventListener('click', () => {
+          document.body.removeChild(overlay);
+          // Remove halo effect
+          if (descriptionField) {
+            descriptionField.classList.remove('halo-effect');
+          }
+          resolve({ proceed: true, skipValidation: true });
+        });
+      }
+    });
   }
 }

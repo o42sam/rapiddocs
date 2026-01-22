@@ -647,13 +647,15 @@ export class GeneratePage {
         and visualize our 40% carbon reduction achievement. Use clean, modern visuals with eco-friendly themes."
       `,
       invoice: `
-        <strong>Provide transaction details:</strong> Include your business name and address (if available),
-        comma-separated items with their prices and quantities, customer name, and preferred invoice date
-        (if different from today's date).
+        <strong>Provide complete transaction details:</strong> Include vendor (your business) name and full address,
+        customer/client name and address, detailed list of items/services with prices and quantities,
+        payment terms, and any special notes.
         <br><br>
-        <strong>Example:</strong> "Fashion Boutique Ltd, 456 Style Avenue, Los Angeles, CA.
+        <strong>Example:</strong> "Vendor: Fashion Boutique Ltd, 456 Style Avenue, Los Angeles, CA 90015, USA.
+        Customer: Sarah Johnson at Digital Innovations Inc, 789 Tech Plaza, San Francisco, CA 94105.
         Items: Blue Denim Jeans ($45 x 2), White Cotton T-Shirt ($25 x 3), Black Leather Jacket ($120 x 1),
-        Red Summer Dress ($60 x 2). Customer: Sarah Johnson. Date: November 23, 2025."
+        Red Summer Dress ($60 x 2). Payment terms: Net 30 days. Tax rate: 10%.
+        Notes: Thank you for your continued business! Contact us at sales@fashionboutique.com for any questions."
       `
     };
 
@@ -734,18 +736,18 @@ export class GeneratePage {
 
       const documentType = documentTypeSelect.value;
 
-      // Hide length field for invoices (invoices don't have word count)
-      if (documentType === 'invoice') {
-        lengthContainer.classList.add('hidden');
-        // Remove required attribute when hidden
-        if (lengthInput) {
-          lengthInput.removeAttribute('required');
-        }
-      } else {
+      // Show length field only for infographic and formal documents
+      if (documentType === 'infographic' || documentType === 'formal') {
         lengthContainer.classList.remove('hidden');
         // Re-add required attribute when visible
         if (lengthInput) {
           lengthInput.setAttribute('required', 'required');
+        }
+      } else {
+        lengthContainer.classList.add('hidden');
+        // Remove required attribute when hidden
+        if (lengthInput) {
+          lengthInput.removeAttribute('required');
         }
       }
     };

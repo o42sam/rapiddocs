@@ -1,0 +1,78 @@
+[Unit]
+Description=DocGen Backend API Service
+Documentation=https://github.com/yourusername/docgen
+After=network.target mongodb.service
+Wants=mongodb.service
+
+[Service]
+Type=notify
+User=docgen
+Group=docgen
+WorkingDirectory=/home/docgen/backend
+
+# Environment setup
+Environment="PATH=/home/docgen/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONPATH=/home/docgen/backend"
+EnvironmentFile=/home/docgen/backend/.env.production
+
+# Create runtime directories
+RuntimeDirectory=docgen
+RuntimeDirectoryMode=0755
+
+# Start command - using main_simple.py which has all endpoints configured
+ExecStart=/home/docgen/backend/venv/bin/gunicorn \
+    --config /home/docgen/backend/gunicorn_production.conf.py \
+    --env APP_ENV=production \
+    app.main_simple:app
+
+# Reload command
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Stop command
+ExecStop=/bin/kill -s TERM $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Output logging
+StandardOutput=append:/var/log/docgen/service.log
+StandardError=append:/var/log/docgen/service-error.log
+SyslogIdentifier=docgen-backend
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/docgen/uploads /home/docgen/generated_pdfs /var/log/docgen /var/run/docgen /tmp/docgen-uploads
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+PrivateMounts=true
+SystemCallFilter=@system-service
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+# Memory limit (adjust based on VPS resources)
+MemoryMax=2G
+CPUQuota=200%
+
+# Nice level for process priority
+Nice=10
+
+# Timeout settings
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+Alias=docgen.service

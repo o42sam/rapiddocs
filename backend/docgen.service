@@ -1,0 +1,37 @@
+[Unit]
+Description=DocGen Backend API Service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=notify
+User=docgen
+Group=docgen
+WorkingDirectory=/home/docgen/backend
+Environment="PATH=/home/docgen/backend/venv/bin"
+Environment="PYTHONPATH=/home/docgen/backend"
+
+# Use the main_simple.py app which has all the endpoints properly configured
+ExecStart=/home/docgen/backend/venv/bin/gunicorn \
+    --config /home/docgen/backend/gunicorn.conf.py \
+    app.main_simple:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/docgen/service.log
+StandardError=append:/var/log/docgen/service-error.log
+
+# Security settings
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/docgen/uploads /home/docgen/generated_pdfs /var/log/docgen
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

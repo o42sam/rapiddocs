@@ -59,3 +59,27 @@ select:focus {
 .btn-secondary {
   @apply px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition;
 }
+
+/* Halo effect for input validation */
+@keyframes halo-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(251, 146, 60, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.7);
+  }
+}
+
+.halo-effect {
+  animation: halo-pulse 2s infinite;
+  border-color: #fb923c !important;
+  outline: none !important;
+}
+
+.halo-effect:focus {
+  animation: halo-pulse 2s infinite;
+  border-color: #fb923c !important;
+}

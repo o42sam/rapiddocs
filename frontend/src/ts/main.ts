@@ -132,6 +132,26 @@ router.register('/pricing', async () => {
   currentPage = page;
 });
 
+router.register('/terms-of-service', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
+  const { TermsOfServicePage } = await import('./pages/TermsOfServicePage');
+  const page = new TermsOfServicePage();
+  page.render();
+  currentPage = page;
+});
+
+router.register('/privacy-policy', async () => {
+  if (currentPage && currentPage.destroy) {
+    currentPage.destroy();
+  }
+  const { PrivacyPolicyPage } = await import('./pages/PrivacyPolicyPage');
+  const page = new PrivacyPolicyPage();
+  page.render();
+  currentPage = page;
+});
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
   console.log('RapidDocs initialized');
