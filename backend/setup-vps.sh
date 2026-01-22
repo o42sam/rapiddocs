@@ -913,7 +913,12 @@ main() {
     setup_firewall
     create_app_user
     setup_python
-    setup_mongodb_client
+    # Skip MongoDB client setup on Kali - not needed for Atlas
+    if [[ "$OS_ID" != "kali" ]] && [[ "$OS_ID" != "parrot" ]]; then
+        setup_mongodb_client
+    else
+        log_info "Skipping MongoDB client installation on $OS_ID - using MongoDB Atlas"
+    fi
     setup_nginx
     setup_ssl
     setup_fail2ban
