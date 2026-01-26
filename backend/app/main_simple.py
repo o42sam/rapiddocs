@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 import os
@@ -74,9 +75,9 @@ app = FastAPI(
     description="AI-powered document generation API",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    docs_url=None,  # Disable automatic docs
+    redoc_url=None,  # Disable automatic redoc
+    openapi_url=None  # Disable automatic openapi
 )
 
 # CORS
@@ -139,6 +140,73 @@ async def check_auth_or_frontend(request: Request, credentials: Optional[HTTPAut
         raise HTTPException(status_code=401, detail="Admin user not found or inactive")
 
     return admin
+
+
+# Admin authentication only (no frontend bypass)
+async def require_admin_auth(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Require admin authentication for sensitive endpoints."""
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    auth_service = request.app.state.auth_service
+    token_data = auth_service.decode_token(credentials.credentials)
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    admin = await auth_service.get_admin_by_username(token_data.get("username"))
+    if not admin or not admin.is_active:
+        raise HTTPException(status_code=401, detail="Admin user not found or inactive")
+
+    return admin
+
+
+# Protected OpenAPI endpoints
+@app.get("/openapi.json", dependencies=[Depends(require_admin_auth)])
+async def get_openapi():
+    """Get OpenAPI schema (requires admin auth)."""
+    from fastapi.openapi.utils import get_openapi
+    if not app.openapi_schema:
+        app.openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+        )
+    return app.openapi_schema
+
+
+@app.get("/docs", dependencies=[Depends(require_admin_auth)])
+async def custom_swagger_ui_html(request: Request):
+    """Swagger UI documentation (requires admin auth)."""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=str(request.url_for("swagger_ui_redirect")),
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+
+@app.get("/docs/oauth2-redirect", include_in_schema=False)
+async def swagger_ui_redirect():
+    """OAuth2 redirect for Swagger UI."""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url="/docs/oauth2-redirect",
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+
+@app.get("/redoc", dependencies=[Depends(require_admin_auth)])
+async def redoc_html(request: Request):
+    """ReDoc documentation (requires admin auth)."""
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title=app.title + " - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js",
+    )
 
 
 # HTML Pages (no auth required for login/register)
