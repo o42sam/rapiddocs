@@ -22,7 +22,7 @@ from app.config import settings
 from app.services.gemini_service import GeminiService
 from app.services.pdf_service import PDFService
 from app.services.auth_service import AuthService
-from app.routes import admin
+from app.routes import admin, user_auth
 from app.middleware.auth import AuthMiddleware, security
 
 # Set up logging
@@ -101,8 +101,9 @@ app.add_middleware(
 if os.path.exists(settings.PDF_OUTPUT_DIR):
     app.mount("/pdfs", StaticFiles(directory=settings.PDF_OUTPUT_DIR), name="pdfs")
 
-# Include admin routes
+# Include routers
 app.include_router(admin.router)
+app.include_router(user_auth.router)
 
 
 # Authentication check dependency
