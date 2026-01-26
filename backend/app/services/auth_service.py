@@ -117,6 +117,11 @@ class AuthService:
         if existing:
             return None
 
+        # Check if this is the initial system-generated referral key
+        # If it's created by "system", make the first admin a superuser
+        if ref_key.get("created_by") == "system" and ref_key.get("notes") == "Initial superuser registration key":
+            is_superuser = True
+
         # Create admin user with explicit _id
         admin_dict = {
             "_id": ObjectId(),

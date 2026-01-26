@@ -163,13 +163,13 @@ async def get_current_admin_info(request: Request, credentials: HTTPAuthorizatio
     )
 
 
-@router.post("/referral-key", response_model=ReferralKeyResponse, dependencies=[Depends(require_superuser)])
+@router.post("/referral-key", response_model=ReferralKeyResponse)
 async def create_referral_key(
     request: Request,
     key_data: ReferralKeyCreate,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
-    """Create a new referral key (superuser only)."""
+    """Create a new referral key (any admin can create)."""
     auth_service: AuthService = request.app.state.auth_service
 
     token_data = auth_service.decode_token(credentials.credentials)
