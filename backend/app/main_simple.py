@@ -47,9 +47,9 @@ app = FastAPI(
     description="AI-powered document generation API",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url=f"{settings.API_PREFIX}/docs",
-    redoc_url=f"{settings.API_PREFIX}/redoc",
-    openapi_url=f"{settings.API_PREFIX}/openapi.json"
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
 # CORS
@@ -146,7 +146,7 @@ async def readiness_check():
 
 
 # Credits endpoints
-@app.get(f"{settings.API_PREFIX}/credits/balance")
+@app.get("/credits/balance")
 async def get_credit_balance():
     """Get current credit balance."""
     return {
@@ -155,7 +155,7 @@ async def get_credit_balance():
     }
 
 
-@app.post(f"{settings.API_PREFIX}/credits/deduct")
+@app.post("/credits/deduct")
 async def deduct_credits(document_type: str):
     """Deduct credits for document generation."""
     credit_costs = {
@@ -173,7 +173,7 @@ async def deduct_credits(document_type: str):
     }
 
 
-@app.get(f"{settings.API_PREFIX}/credits/packages")
+@app.get("/credits/packages")
 async def get_credit_packages():
     """Get available credit packages."""
     return {
@@ -204,7 +204,7 @@ async def get_credit_packages():
 
 
 # Invoice validation endpoint
-@app.post(f"{settings.API_PREFIX}/validate/invoice")
+@app.post("/validate/invoice")
 async def validate_invoice_prompt(description: str = Form(...)):
     """Validate if the user prompt has enough information for invoice generation."""
     try:
@@ -233,7 +233,7 @@ async def validate_invoice_prompt(description: str = Form(...)):
 
 
 # Document generation endpoint with actual PDF generation
-@app.post(f"{settings.API_PREFIX}/generate/document")
+@app.post("/generate/document")
 async def generate_document(
     description: str = Form(...),
     length: int = Form(500),
@@ -353,7 +353,7 @@ async def generate_document(
                 "job_id": job_id,
                 "status": "completed",
                 "message": "Invoice generated successfully",
-                "download_url": f"/api/v1/generate/download/{job_id}",
+                "download_url": f"/generate/download/{job_id}",
                 "document_type": document_type,
                 "credits_used": 1
             }
@@ -385,7 +385,7 @@ async def generate_document(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get(f"{settings.API_PREFIX}/generate/status/{{job_id}}")
+@app.get("/generate/status/{job_id}")
 async def get_job_status(job_id: str):
     """Get generation job status."""
     # Check if the PDF exists
@@ -412,7 +412,7 @@ async def get_job_status(job_id: str):
         }
 
 
-@app.get(f"{settings.API_PREFIX}/generate/download/{{job_id}}")
+@app.get("/generate/download/{job_id}")
 async def download_generated_document(job_id: str):
     """Download generated document PDF."""
     try:
@@ -469,42 +469,17 @@ async def download_generated_document(job_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Serve frontend static files
-static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-if os.path.exists(static_dir):
-    # Mount assets directory
-    assets_dir = os.path.join(static_dir, "assets")
-    if os.path.exists(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+# API-only deployment - no frontend serving
+# Frontend is hosted separately on Firebase
 
-    # Serve root
-    @app.get("/")
-    async def serve_root():
-        return FileResponse(os.path.join(static_dir, "index.html"))
-
-    # Serve static files
-    @app.get("/favicon.ico")
-    async def serve_favicon():
-        favicon_path = os.path.join(static_dir, "favicon.ico")
-        if os.path.exists(favicon_path):
-            return FileResponse(favicon_path)
-        return {"detail": "Not found"}
-
-    # Catch-all route for SPA
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        if full_path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="Not Found")
-
-        index_path = os.path.join(static_dir, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"detail": "Frontend not found"}
-else:
-    @app.get("/")
-    async def root():
-        return {
-            "message": "RapidDocs Backend API",
-            "docs": "/api/v1/docs",
-            "health": "/health"
-        }
+@app.get("/")
+async def root():
+    """API root endpoint."""
+    return {
+        "message": "RapidDocs Backend API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "redoc": "/redoc",
+        "health": "/health",
+        "environment": settings.APP_ENV
+    }

@@ -103,4 +103,5 @@ demo_*.py
 
 # Markdown files (documentation) - ignore all .md files except README.md
 *.md
-!README.md
+!README.mdbackend/.env.production
+frontend/.env.production
