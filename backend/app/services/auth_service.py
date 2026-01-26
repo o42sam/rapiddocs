@@ -6,6 +6,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from bson import ObjectId
 from app.models.admin import AdminUser, ReferralKey
 from app.config import settings
 
@@ -116,19 +117,23 @@ class AuthService:
         if existing:
             return None
 
-        # Create admin user
-        admin = AdminUser(
-            username=username,
-            email=email,
-            hashed_password=self.get_password_hash(password),
-            full_name=full_name,
-            is_superuser=is_superuser,
-            created_by_referral=referral_key,
-            permissions=["docs:read", "health:read"] if not is_superuser else ["*"]
-        )
+        # Create admin user with explicit _id
+        admin_dict = {
+            "_id": ObjectId(),
+            "username": username,
+            "email": email,
+            "hashed_password": self.get_password_hash(password),
+            "full_name": full_name,
+            "is_active": True,
+            "is_superuser": is_superuser,
+            "created_at": datetime.utcnow(),
+            "last_login": None,
+            "created_by_referral": referral_key,
+            "permissions": ["*"] if is_superuser else ["docs:read", "health:read"]
+        }
 
-        result = await self.db.admins.insert_one(admin.dict(by_alias=True))
-        admin.id = result.inserted_id
+        result = await self.db.admins.insert_one(admin_dict)
+        admin_dict["_id"] = result.inserted_id
 
         # Update referral key usage
         await self.db.referral_keys.update_one(
@@ -149,7 +154,7 @@ class AuthService:
                 {"$set": {"is_active": False}}
             )
 
-        return admin
+        return AdminUser(**admin_dict)
 
     async def get_admin_by_username(self, username: str) -> Optional[AdminUser]:
         """Get admin user by username."""
@@ -166,18 +171,24 @@ class AuthService:
         notes: Optional[str] = None
     ) -> ReferralKey:
         """Create a new referral key."""
-        key = ReferralKey(
-            key=secrets.token_urlsafe(32),
-            created_by=created_by,
-            max_uses=max_uses,
-            expires_at=datetime.utcnow() + timedelta(days=expires_in_days) if expires_in_days else None,
-            notes=notes
-        )
+        key_dict = {
+            "_id": ObjectId(),
+            "key": secrets.token_urlsafe(32),
+            "created_by": created_by,
+            "created_at": datetime.utcnow(),
+            "used_at": None,
+            "used_by": None,
+            "is_active": True,
+            "max_uses": max_uses,
+            "current_uses": 0,
+            "expires_at": datetime.utcnow() + timedelta(days=expires_in_days) if expires_in_days else None,
+            "notes": notes
+        }
 
-        result = await self.db.referral_keys.insert_one(key.dict(by_alias=True))
-        key.id = result.inserted_id
+        result = await self.db.referral_keys.insert_one(key_dict)
+        key_dict["_id"] = result.inserted_id
 
-        return key
+        return ReferralKey(**key_dict)
 
     async def get_active_referral_keys(self, created_by: Optional[str] = None):
         """Get all active referral keys."""
@@ -198,14 +209,22 @@ class AuthService:
         if admin_count > 0:
             return None
 
-        # Create initial referral key
+        # Create initial referral key with explicit _id
         initial_key = secrets.token_urlsafe(32)
-        ref_key = ReferralKey(
-            key=initial_key,
-            created_by="system",
-            max_uses=1,
-            notes="Initial superuser registration key"
-        )
-        await self.db.referral_keys.insert_one(ref_key.dict(by_alias=True))
+        ref_key_dict = {
+            "_id": ObjectId(),
+            "key": initial_key,
+            "created_by": "system",
+            "created_at": datetime.utcnow(),
+            "used_at": None,
+            "used_by": None,
+            "is_active": True,
+            "max_uses": 1,
+            "current_uses": 0,
+            "expires_at": None,
+            "notes": "Initial superuser registration key"
+        }
+
+        await self.db.referral_keys.insert_one(ref_key_dict)
 
         return ("system", initial_key)
