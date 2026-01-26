@@ -292,6 +292,45 @@ async def get_dashboard_stats(
     )
 
 
+@router.delete("/referral-key/{key}")
+async def delete_referral_key(
+    request: Request,
+    key: str,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Delete a referral key."""
+    auth_service: AuthService = request.app.state.auth_service
+    db = request.app.state.db
+
+    # Verify admin
+    token_data = auth_service.decode_token(credentials.credentials)
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    admin = await auth_service.get_admin_by_username(token_data["username"])
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+
+    # Find the referral key
+    ref_key = await db.referral_keys.find_one({"key": key})
+    if not ref_key:
+        raise HTTPException(status_code=404, detail="Referral key not found")
+
+    # Check permissions: only the creator or a superuser can delete
+    if ref_key["created_by"] != admin.username and not admin.is_superuser:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only delete your own referral keys"
+        )
+
+    # Delete the key
+    result = await db.referral_keys.delete_one({"key": key})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to delete referral key")
+
+    return {"message": "Referral key deleted successfully"}
+
+
 @router.post("/logout")
 async def logout(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Logout current admin."""

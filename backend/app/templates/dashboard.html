@@ -84,6 +84,7 @@
             font-weight: 500;
             border-bottom: 3px solid transparent;
             transition: all 0.3s;
+            cursor: pointer;
         }
 
         .nav-item:hover {
@@ -100,6 +101,14 @@
             max-width: 1200px;
             margin: 30px auto;
             padding: 0 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .stats-grid {
@@ -212,6 +221,22 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-danger {
+            padding: 6px 12px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -221,6 +246,14 @@
         .error {
             background: #fee;
             color: #e74c3c;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
@@ -240,6 +273,45 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .health-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .health-status.operational {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .health-status.degraded {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .health-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -257,11 +329,10 @@
 
     <nav class="nav-menu">
         <div class="nav-content">
-            <a href="/admin/dashboard" class="nav-item active">Dashboard</a>
-            <a href="/docs" class="nav-item" target="_blank">API Docs</a>
-            <a href="/health" class="nav-item" target="_blank">Health Check</a>
-            <a href="/health/detailed" class="nav-item" target="_blank">Detailed Health</a>
-            <a href="#" class="nav-item" onclick="showReferralKeys()">Referral Keys</a>
+            <a class="nav-item active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</a>
+            <a class="nav-item" onclick="showTab('health')" id="tab-health">Health Status</a>
+            <a class="nav-item" onclick="showTab('referrals')" id="tab-referrals">Referral Keys</a>
+            <a class="nav-item" onclick="openDocs()">API Docs ↗</a>
         </div>
     </nav>
 
@@ -272,8 +343,10 @@
         </div>
 
         <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
 
-        <div id="dashboard" style="display: none;">
+        <!-- Dashboard Tab -->
+        <div id="dashboard-content" class="tab-content active" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-label">Total Users</div>
@@ -333,8 +406,28 @@
                     </tr>
                 </table>
             </div>
+        </div>
 
-            <div class="section" id="referralSection" style="display: none;">
+        <!-- Health Tab -->
+        <div id="health-content" class="tab-content">
+            <div class="section">
+                <h2 class="section-title">Health Check Status</h2>
+                <div id="healthBasic">
+                    <p>Loading health status...</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Detailed Health Information</h2>
+                <div id="healthDetailed">
+                    <p>Loading detailed health information...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral Keys Tab -->
+        <div id="referrals-content" class="tab-content">
+            <div class="section">
                 <h2 class="section-title">Referral Keys Management</h2>
                 <button class="btn-primary" onclick="createReferralKey()" style="margin-bottom: 20px;">Create New Key</button>
                 <table class="table" id="referralTable">
@@ -345,6 +438,7 @@
                             <th>Uses</th>
                             <th>Status</th>
                             <th>Expires</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="referralTableBody">
@@ -370,6 +464,46 @@
             await loadUserInfo();
             await loadDashboard();
         });
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none';
+            });
+
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Show selected tab
+            const tabContent = document.getElementById(`${tabName}-content`);
+            if (tabContent) {
+                tabContent.classList.add('active');
+                tabContent.style.display = 'block';
+            }
+
+            // Set active nav item
+            const navItem = document.getElementById(`tab-${tabName}`);
+            if (navItem) {
+                navItem.classList.add('active');
+            }
+
+            // Load tab-specific content
+            if (tabName === 'health') {
+                loadHealthData();
+            } else if (tabName === 'referrals') {
+                loadReferralKeys();
+            }
+        }
+
+        async function openDocs() {
+            const token = localStorage.getItem('access_token');
+            // Open docs in new window with auth token in header
+            // Since we can't set headers for window.open, we'll use the token in the URL
+            window.open(`${API_URL}/docs`, '_blank');
+        }
 
         async function loadUserInfo() {
             const token = localStorage.getItem('access_token');
@@ -398,7 +532,7 @@
         async function loadDashboard() {
             const token = localStorage.getItem('access_token');
             const loadingDiv = document.getElementById('loading');
-            const dashboardDiv = document.getElementById('dashboard');
+            const dashboardDiv = document.getElementById('dashboard-content');
             const errorDiv = document.getElementById('error');
 
             try {
@@ -439,9 +573,71 @@
             }
         }
 
-        async function showReferralKeys() {
+        async function loadHealthData() {
             const token = localStorage.getItem('access_token');
-            const section = document.getElementById('referralSection');
+            const basicDiv = document.getElementById('healthBasic');
+            const detailedDiv = document.getElementById('healthDetailed');
+
+            // Load basic health
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    basicDiv.innerHTML = `
+                        <p><strong>Status:</strong> <span class="health-status operational">HEALTHY</span></p>
+                        <p><strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                    `;
+                } else {
+                    basicDiv.innerHTML = '<p class="error">Failed to load basic health status</p>';
+                }
+            } catch (error) {
+                basicDiv.innerHTML = '<p class="error">Error loading health status</p>';
+            }
+
+            // Load detailed health
+            try {
+                const response = await fetch(`${API_URL}/health/detailed`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    let servicesHtml = '<table class="table"><thead><tr><th>Service</th><th>Status</th></tr></thead><tbody>';
+
+                    for (const [service, status] of Object.entries(data.services)) {
+                        const statusClass = status === 'operational' ? 'operational' :
+                                          status === 'degraded' ? 'degraded' : 'error';
+                        servicesHtml += `
+                            <tr>
+                                <td>${service}</td>
+                                <td><span class="health-status ${statusClass}">${status.toUpperCase()}</span></td>
+                            </tr>
+                        `;
+                    }
+
+                    servicesHtml += '</tbody></table>';
+
+                    detailedDiv.innerHTML = `
+                        <p><strong>Overall Status:</strong> <span class="health-status ${data.status === 'healthy' ? 'operational' : 'degraded'}">${data.status.toUpperCase()}</span></p>
+                        <p><strong>Environment:</strong> ${data.environment}</p>
+                        <p><strong>Version:</strong> ${data.version}</p>
+                        <h3 style="margin-top: 20px; margin-bottom: 10px;">Services</h3>
+                        ${servicesHtml}
+                        <h3 style="margin-top: 20px; margin-bottom: 10px;">Full Response</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    detailedDiv.innerHTML = '<p class="error">Failed to load detailed health status. Authentication may be required.</p>';
+                }
+            } catch (error) {
+                detailedDiv.innerHTML = '<p class="error">Error loading detailed health status</p>';
+            }
+        }
+
+        async function loadReferralKeys() {
+            const token = localStorage.getItem('access_token');
             const tbody = document.getElementById('referralTableBody');
 
             try {
@@ -469,13 +665,18 @@
                         <td>${key.current_uses} / ${key.max_uses}</td>
                         <td>${key.is_active ? '<span style="color: #27ae60;">Active</span>' : '<span style="color: #e74c3c;">Inactive</span>'}</td>
                         <td>${key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Never'}</td>
+                        <td>
+                            <button class="btn-danger" onclick="deleteReferralKey('${key.key}')">Delete</button>
+                        </td>
                     `;
                 });
 
-                section.style.display = 'block';
+                if (keys.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No referral keys found</td></tr>';
+                }
             } catch (error) {
                 console.error('Error loading referral keys:', error);
-                alert('Failed to load referral keys');
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #e74c3c;">Failed to load referral keys</td></tr>';
             }
         }
 
@@ -508,8 +709,15 @@
 
                 if (response.ok) {
                     const key = await response.json();
-                    alert(`New referral key created:\n\n${key.key}\n\nPlease save this key securely.`);
-                    await showReferralKeys();
+                    // Show success message
+                    const successDiv = document.getElementById('success');
+                    successDiv.innerHTML = `<strong>New referral key created:</strong><br><code>${key.key}</code><br>Please save this key securely.`;
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 10000);
+
+                    await loadReferralKeys();
                 } else {
                     const error = await response.json();
                     alert(`Failed to create key: ${error.detail}`);
@@ -517,6 +725,40 @@
             } catch (error) {
                 console.error('Error creating referral key:', error);
                 alert('Failed to create referral key');
+            }
+        }
+
+        async function deleteReferralKey(key) {
+            if (!confirm('Are you sure you want to delete this referral key? This action cannot be undone.')) {
+                return;
+            }
+
+            const token = localStorage.getItem('access_token');
+
+            try {
+                const response = await fetch(`${API_URL}/admin/referral-key/${encodeURIComponent(key)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const successDiv = document.getElementById('success');
+                    successDiv.textContent = 'Referral key deleted successfully.';
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 5000);
+
+                    await loadReferralKeys();
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to delete key: ${error.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting referral key:', error);
+                alert('Failed to delete referral key');
             }
         }
 
