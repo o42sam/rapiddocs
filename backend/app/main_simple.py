@@ -234,8 +234,8 @@ async def dashboard_page(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
-# Health endpoints (protected)
-@app.get("/health", dependencies=[Depends(check_auth_or_frontend)])
+# Health endpoints (no auth required for Docker health checks)
+@app.get("/health")
 async def health_check():
     """Basic health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
@@ -298,7 +298,7 @@ async def detailed_health_check(request: Request):
     return health_status
 
 
-@app.get("/health/ready", dependencies=[Depends(check_auth_or_frontend)])
+@app.get("/health/ready")
 async def readiness_check(request: Request):
     """Readiness probe for Kubernetes/monitoring."""
     # Check if all services are ready
