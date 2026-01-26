@@ -1,7 +1,5 @@
-import axios from 'axios';
+import { apiClient } from '../api/client';
 import { authState } from './authState';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 interface GoogleAuthResponse {
   authorization_url: string;
@@ -15,8 +13,8 @@ class GoogleOAuthService {
    */
   async initiateLogin(): Promise<void> {
     try {
-      const response = await axios.get<GoogleAuthResponse>(
-        `${API_BASE_URL}/auth/google/login`
+      const response = await apiClient.get<GoogleAuthResponse>(
+        `/auth/google/login`
       );
 
       const { authorization_url, state } = response.data;
@@ -93,7 +91,7 @@ class GoogleOAuthService {
       localStorage.setItem('refresh_token', refreshToken);
 
       // Fetch user information with the new token
-      const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+      const response = await apiClient.get(`/auth/me`, {
         headers: {
           Authorization: `Bearer ${accessToken}`
         }

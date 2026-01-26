@@ -11,9 +11,17 @@ export class Hero {
   }
 
   private render(): void {
-    this.element.className = 'min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 pt-16';
+    this.element.className = 'hero-bg-wrapper pt-16';
     this.element.innerHTML = `
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <!-- Background image -->
+      <div class="hero-bg-image"></div>
+
+      <!-- Fog overlay -->
+      <div class="hero-fog-overlay"></div>
+
+      <!-- Content -->
+      <div class="hero-content">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div class="text-center max-w-4xl mx-auto">
           <!-- Main Heading -->
           <h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 hero-title-fade">
@@ -77,6 +85,7 @@ export class Hero {
             </div>
           </div>
         </div>
+      </div>
       </div>
     `;
   }

@@ -4,12 +4,16 @@ import { Navigation } from './components/Navigation';
 import { CreditsPurchaseModal } from './components/CreditsPurchaseModal';
 import { authService } from './auth/authService';
 import { googleOAuthService } from './auth/googleOAuthService';
+import { MouseCursor } from './utils/mouseCursor';
 
 // Setup axios interceptors for authentication
 authService.setupAxiosInterceptors();
 
 // Initialize credits purchase modal
 new CreditsPurchaseModal();
+
+// Initialize global mouse cursor effect
+new MouseCursor();
 
 // Handle OAuth callback if present
 if (googleOAuthService.isOAuthCallback()) {

@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Form, UploadFile, File, HTTPException
+from fastapi import FastAPI, Form, UploadFile, File, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 import os
@@ -13,14 +14,22 @@ import logging
 import cairosvg
 from PIL import Image
 import io
+import motor.motor_asyncio
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.config import settings
 from app.services.gemini_service import GeminiService
 from app.services.pdf_service import PDFService
+from app.services.auth_service import AuthService
+from app.routes import admin
+from app.middleware.auth import AuthMiddleware, security
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Templates for HTML pages
+templates = Jinja2Templates(directory="app/templates")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,15 +40,33 @@ async def lifespan(app: FastAPI):
     os.makedirs(Path(settings.PDF_OUTPUT_DIR) / "invoices", exist_ok=True)
     os.makedirs(Path(settings.UPLOAD_DIR) / "logos", exist_ok=True)
 
+    # Initialize MongoDB connection
+    client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
+    app.state.db = client[settings.MONGODB_DB_NAME]
+
     # Initialize services
     app.state.gemini_service = GeminiService()
     app.state.pdf_service = PDFService()
+    app.state.auth_service = AuthService(app.state.db)
+    app.state.auth_middleware = AuthMiddleware(app.state.auth_service)
+    app.state.start_time = datetime.utcnow()
+
     logger.info("Services initialized successfully")
+
+    # Create initial superuser if none exists
+    initial_creds = await app.state.auth_service.create_initial_superuser()
+    if initial_creds:
+        logger.info("=" * 60)
+        logger.info("INITIAL SETUP - SAVE THIS INFORMATION!")
+        logger.info(f"Initial referral key created: {initial_creds[1]}")
+        logger.info("Use this key to register the first superuser admin")
+        logger.info("Access registration at: https://api.rapiddocs.io/register")
+        logger.info("=" * 60)
 
     yield
 
     # Shutdown
-    pass
+    client.close()
 
 
 app = FastAPI(
@@ -55,7 +82,15 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "*"],
+    allow_origins=[
+        "https://rapiddocs.web.app",
+        "https://rapiddocs.firebaseapp.com",
+        "https://rapiddocs.io",
+        "https://www.rapiddocs.io",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,15 +100,81 @@ app.add_middleware(
 if os.path.exists(settings.PDF_OUTPUT_DIR):
     app.mount("/pdfs", StaticFiles(directory=settings.PDF_OUTPUT_DIR), name="pdfs")
 
+# Include admin routes
+app.include_router(admin.router)
 
-@app.get("/health")
+
+# Authentication check dependency
+async def check_auth_or_frontend(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Check if request is authenticated or from allowed frontend."""
+    # Check if request is from allowed frontend origin
+    origin = request.headers.get("origin", "")
+    referer = request.headers.get("referer", "")
+
+    allowed_origins = [
+        "https://rapiddocs.web.app",
+        "https://rapiddocs.firebaseapp.com",
+        "https://rapiddocs.io",
+        "https://www.rapiddocs.io",
+        "http://localhost:5173",
+        "http://localhost:5174"
+    ]
+
+    # If request is from allowed frontend, allow it
+    for allowed in allowed_origins:
+        if origin.startswith(allowed) or referer.startswith(allowed):
+            return None
+
+    # Otherwise, require admin authentication
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    auth_service = request.app.state.auth_service
+    token_data = auth_service.decode_token(credentials.credentials)
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    admin = await auth_service.get_admin_by_username(token_data.get("username"))
+    if not admin or not admin.is_active:
+        raise HTTPException(status_code=401, detail="Admin user not found or inactive")
+
+    return admin
+
+
+# HTML Pages (no auth required for login/register)
+@app.get("/", response_class=HTMLResponse)
+async def root_page(request: Request):
+    """Redirect to login page."""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Serve login page."""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """Serve registration page."""
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+async def dashboard_page(request: Request):
+    """Serve admin dashboard page."""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+# Health endpoints (protected)
+@app.get("/health", dependencies=[Depends(check_auth_or_frontend)])
 async def health_check():
     """Basic health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
-@app.get("/health/detailed")
-async def detailed_health_check():
+@app.get("/health/detailed", dependencies=[Depends(check_auth_or_frontend)])
+async def detailed_health_check(request: Request):
     """Detailed health check with service status."""
     health_status = {
         "status": "healthy",
@@ -81,7 +182,9 @@ async def detailed_health_check():
         "services": {
             "gemini": "operational",
             "pdf_generator": "operational",
-            "storage": "operational"
+            "storage": "operational",
+            "database": "operational",
+            "auth": "operational"
         },
         "directories": {
             "upload_dir": os.path.exists(settings.UPLOAD_DIR),
@@ -91,9 +194,9 @@ async def detailed_health_check():
         "version": "1.0.0"
     }
 
-    # Check if Gemini service is initialized
+    # Check if services are initialized
     try:
-        if hasattr(app.state, 'gemini_service'):
+        if hasattr(request.app.state, 'gemini_service'):
             health_status["services"]["gemini"] = "operational"
         else:
             health_status["services"]["gemini"] = "not_initialized"
@@ -102,9 +205,8 @@ async def detailed_health_check():
         health_status["services"]["gemini"] = "error"
         health_status["status"] = "degraded"
 
-    # Check if PDF service is initialized
     try:
-        if hasattr(app.state, 'pdf_service'):
+        if hasattr(request.app.state, 'pdf_service'):
             health_status["services"]["pdf_generator"] = "operational"
         else:
             health_status["services"]["pdf_generator"] = "not_initialized"
@@ -113,23 +215,39 @@ async def detailed_health_check():
         health_status["services"]["pdf_generator"] = "error"
         health_status["status"] = "degraded"
 
+    try:
+        if hasattr(request.app.state, 'db'):
+            # Test database connection
+            await request.app.state.db.command('ping')
+            health_status["services"]["database"] = "operational"
+        else:
+            health_status["services"]["database"] = "not_initialized"
+            health_status["status"] = "degraded"
+    except:
+        health_status["services"]["database"] = "error"
+        health_status["status"] = "degraded"
+
     return health_status
 
 
-@app.get("/health/ready")
-async def readiness_check():
+@app.get("/health/ready", dependencies=[Depends(check_auth_or_frontend)])
+async def readiness_check(request: Request):
     """Readiness probe for Kubernetes/monitoring."""
     # Check if all services are ready
     is_ready = True
     issues = []
 
-    if not hasattr(app.state, 'gemini_service'):
+    if not hasattr(request.app.state, 'gemini_service'):
         is_ready = False
         issues.append("Gemini service not initialized")
 
-    if not hasattr(app.state, 'pdf_service'):
+    if not hasattr(request.app.state, 'pdf_service'):
         is_ready = False
         issues.append("PDF service not initialized")
+
+    if not hasattr(request.app.state, 'db'):
+        is_ready = False
+        issues.append("Database not initialized")
 
     if not os.path.exists(settings.UPLOAD_DIR):
         is_ready = False
@@ -145,8 +263,8 @@ async def readiness_check():
         raise HTTPException(status_code=503, detail={"status": "not_ready", "issues": issues})
 
 
-# Credits endpoints
-@app.get("/credits/balance")
+# Credits endpoints (protected)
+@app.get("/credits/balance", dependencies=[Depends(check_auth_or_frontend)])
 async def get_credit_balance():
     """Get current credit balance."""
     return {
@@ -155,7 +273,7 @@ async def get_credit_balance():
     }
 
 
-@app.post("/credits/deduct")
+@app.post("/credits/deduct", dependencies=[Depends(check_auth_or_frontend)])
 async def deduct_credits(document_type: str):
     """Deduct credits for document generation."""
     credit_costs = {
@@ -173,7 +291,7 @@ async def deduct_credits(document_type: str):
     }
 
 
-@app.get("/credits/packages")
+@app.get("/credits/packages", dependencies=[Depends(check_auth_or_frontend)])
 async def get_credit_packages():
     """Get available credit packages."""
     return {
@@ -203,12 +321,12 @@ async def get_credit_packages():
     }
 
 
-# Invoice validation endpoint
-@app.post("/validate/invoice")
-async def validate_invoice_prompt(description: str = Form(...)):
+# Invoice validation endpoint (protected)
+@app.post("/validate/invoice", dependencies=[Depends(check_auth_or_frontend)])
+async def validate_invoice_prompt(request: Request, description: str = Form(...)):
     """Validate if the user prompt has enough information for invoice generation."""
     try:
-        gemini_service = app.state.gemini_service
+        gemini_service = request.app.state.gemini_service
 
         # Extract invoice data from the prompt
         invoice_data = await gemini_service.extract_invoice_data(description, "invoice")
@@ -232,9 +350,10 @@ async def validate_invoice_prompt(description: str = Form(...)):
         }
 
 
-# Document generation endpoint with actual PDF generation
-@app.post("/generate/document")
+# Document generation endpoint (protected)
+@app.post("/generate/document", dependencies=[Depends(check_auth_or_frontend)])
 async def generate_document(
+    request: Request,
     description: str = Form(...),
     length: int = Form(500),
     document_type: str = Form(...),
@@ -263,8 +382,8 @@ async def generate_document(
         # Handle different document types
         if document_type == "invoice":
             # Use Gemini to extract invoice data from the user's description
-            gemini_service = app.state.gemini_service
-            pdf_service = app.state.pdf_service
+            gemini_service = request.app.state.gemini_service
+            pdf_service = request.app.state.pdf_service
 
             logger.info(f"Processing invoice generation for job {job_id}")
             logger.info(f"User description: {description}")
@@ -349,6 +468,15 @@ async def generate_document(
 
             logger.info(f"PDF generated successfully at {pdf_path}")
 
+            # Log document generation to database
+            await request.app.state.db.generation_jobs.insert_one({
+                "job_id": job_id,
+                "document_type": document_type,
+                "created_at": datetime.utcnow(),
+                "status": "completed",
+                "user_ip": request.client.host if request.client else None
+            })
+
             return {
                 "job_id": job_id,
                 "status": "completed",
@@ -385,7 +513,7 @@ async def generate_document(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/generate/status/{job_id}")
+@app.get("/generate/status/{job_id}", dependencies=[Depends(check_auth_or_frontend)])
 async def get_job_status(job_id: str):
     """Get generation job status."""
     # Check if the PDF exists
@@ -412,7 +540,7 @@ async def get_job_status(job_id: str):
         }
 
 
-@app.get("/generate/download/{job_id}")
+@app.get("/generate/download/{job_id}", dependencies=[Depends(check_auth_or_frontend)])
 async def download_generated_document(job_id: str):
     """Download generated document PDF."""
     try:
@@ -467,19 +595,3 @@ async def download_generated_document(job_id: str):
     except Exception as e:
         logger.error(f"Failed to download document: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# API-only deployment - no frontend serving
-# Frontend is hosted separately on Firebase
-
-@app.get("/")
-async def root():
-    """API root endpoint."""
-    return {
-        "message": "RapidDocs Backend API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "redoc": "/redoc",
-        "health": "/health",
-        "environment": settings.APP_ENV
-    }

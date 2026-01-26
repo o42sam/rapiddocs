@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - RapidDocs Backend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .username {
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-menu {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            color: #555;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover {
+            color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .nav-item.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .stat-change.positive {
+            color: #27ae60;
+        }
+
+        .stat-change.negative {
+            color: #e74c3c;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            text-align: left;
+            padding: 12px;
+            color: #666;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .table td {
+            padding: 12px;
+            color: #333;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>RapidDocs Admin Dashboard</h1>
+            </div>
+            <div class="user-info">
+                <span class="username" id="username">Loading...</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav-menu">
+        <div class="nav-content">
+            <a href="/admin/dashboard" class="nav-item active">Dashboard</a>
+            <a href="/docs" class="nav-item" target="_blank">API Docs</a>
+            <a href="/health" class="nav-item" target="_blank">Health Check</a>
+            <a href="/health/detailed" class="nav-item" target="_blank">Detailed Health</a>
+            <a href="#" class="nav-item" onclick="showReferralKeys()">Referral Keys</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px;">Loading dashboard data...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-change" id="userChange">Loading...</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Active Today</div>
+                    <div class="stat-value" id="dailyActive">0</div>
+                    <div class="stat-change positive">Daily active users</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Documents Generated</div>
+                    <div class="stat-value" id="totalDocs">0</div>
+                    <div class="stat-change" id="docsToday">0 today</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Server Uptime</div>
+                    <div class="stat-value" id="uptime">0d 0h</div>
+                    <div class="stat-change">Since last deployment</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">System Information</h2>
+                <table class="table">
+                    <tr>
+                        <td><strong>Total Admins:</strong></td>
+                        <td id="totalAdmins">0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Active Admins:</strong></td>
+                        <td id="activeAdmins">0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Weekly Active Users:</strong></td>
+                        <td id="weeklyActive">0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Monthly Active Users:</strong></td>
+                        <td id="monthlyActive">0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Documents This Week:</strong></td>
+                        <td id="docsWeek">0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Documents This Month:</strong></td>
+                        <td id="docsMonth">0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Last Deployment:</strong></td>
+                        <td id="lastDeployment">Unknown</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section" id="referralSection" style="display: none;">
+                <h2 class="section-title">Referral Keys Management</h2>
+                <button class="btn-primary" onclick="createReferralKey()" style="margin-bottom: 20px;">Create New Key</button>
+                <table class="table" id="referralTable">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Created By</th>
+                            <th>Uses</th>
+                            <th>Status</th>
+                            <th>Expires</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referralTableBody">
+                        <!-- Keys will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let currentUser = null;
+
+        // Check authentication on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            await loadUserInfo();
+            await loadDashboard();
+        });
+
+        async function loadUserInfo() {
+            const token = localStorage.getItem('access_token');
+            try {
+                const response = await fetch(`${API_URL}/admin/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    currentUser = await response.json();
+                    document.getElementById('username').textContent = `${currentUser.full_name} (${currentUser.username})`;
+                } else if (response.status === 401) {
+                    // Token expired, try to refresh
+                    await refreshToken();
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadDashboard() {
+            const token = localStorage.getItem('access_token');
+            const loadingDiv = document.getElementById('loading');
+            const dashboardDiv = document.getElementById('dashboard');
+            const errorDiv = document.getElementById('error');
+
+            try {
+                const response = await fetch(`${API_URL}/admin/dashboard/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load dashboard stats');
+                }
+
+                const stats = await response.json();
+
+                // Update stats
+                document.getElementById('totalUsers').textContent = stats.total_users;
+                document.getElementById('dailyActive').textContent = stats.daily_active_users;
+                document.getElementById('totalDocs').textContent = stats.total_documents_generated;
+                document.getElementById('docsToday').textContent = `${stats.documents_today} today`;
+                document.getElementById('uptime').textContent = stats.server_uptime;
+                document.getElementById('totalAdmins').textContent = stats.total_admins;
+                document.getElementById('activeAdmins').textContent = stats.active_admins;
+                document.getElementById('weeklyActive').textContent = stats.weekly_active_users;
+                document.getElementById('monthlyActive').textContent = stats.monthly_active_users;
+                document.getElementById('docsWeek').textContent = stats.documents_this_week;
+                document.getElementById('docsMonth').textContent = stats.documents_this_month;
+                document.getElementById('lastDeployment').textContent = new Date(stats.last_deployment).toLocaleString();
+
+                // Hide loading, show dashboard
+                loadingDiv.style.display = 'none';
+                dashboardDiv.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                loadingDiv.style.display = 'none';
+                errorDiv.textContent = 'Failed to load dashboard data. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function showReferralKeys() {
+            const token = localStorage.getItem('access_token');
+            const section = document.getElementById('referralSection');
+            const tbody = document.getElementById('referralTableBody');
+
+            try {
+                const response = await fetch(`${API_URL}/admin/referral-keys`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load referral keys');
+                }
+
+                const keys = await response.json();
+
+                // Clear existing rows
+                tbody.innerHTML = '';
+
+                // Add keys to table
+                keys.forEach(key => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><code style="font-size: 11px;">${key.key.substring(0, 20)}...</code></td>
+                        <td>${key.created_by}</td>
+                        <td>${key.current_uses} / ${key.max_uses}</td>
+                        <td>${key.is_active ? '<span style="color: #27ae60;">Active</span>' : '<span style="color: #e74c3c;">Inactive</span>'}</td>
+                        <td>${key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Never'}</td>
+                    `;
+                });
+
+                section.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading referral keys:', error);
+                alert('Failed to load referral keys');
+            }
+        }
+
+        async function createReferralKey() {
+            const token = localStorage.getItem('access_token');
+            const maxUses = prompt('Maximum uses for this key (1-10):', '1');
+            const expiresInDays = prompt('Expires in days (leave empty for no expiration):', '');
+            const notes = prompt('Notes (optional):', '');
+
+            if (!maxUses) return;
+
+            const data = {
+                max_uses: parseInt(maxUses),
+                notes: notes || null
+            };
+
+            if (expiresInDays) {
+                data.expires_in_days = parseInt(expiresInDays);
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/referral-key`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const key = await response.json();
+                    alert(`New referral key created:\n\n${key.key}\n\nPlease save this key securely.`);
+                    await showReferralKeys();
+                } else {
+                    const error = await response.json();
+                    alert(`Failed to create key: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('Error creating referral key:', error);
+                alert('Failed to create referral key');
+            }
+        }
+
+        async function refreshToken() {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${refreshToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token);
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error refreshing token:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        async function logout() {
+            const token = localStorage.getItem('access_token');
+
+            try {
+                await fetch(`${API_URL}/admin/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

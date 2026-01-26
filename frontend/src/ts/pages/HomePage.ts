@@ -1,15 +1,12 @@
 import { Hero } from '../components/Hero';
 import { initScrollAnimations } from '../utils/intersectionObserver';
-import { MouseCursor } from '../utils/mouseCursor';
 import { router } from '../router';
 
 export class HomePage {
   private hero: Hero;
-  private mouseCursor: MouseCursor;
 
   constructor() {
     this.hero = new Hero();
-    this.mouseCursor = new MouseCursor();
   }
 
   render(): void {
@@ -234,6 +231,5 @@ export class HomePage {
 
   destroy(): void {
     this.hero.unmount();
-    this.mouseCursor.destroy();
   }
 }

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Admin - RapidDocs Backend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .logo .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fee;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success-message {
+            color: #27ae60;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #efe;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .info-message {
+            color: #3498db;
+            font-size: 13px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>RapidDocs Admin</h1>
+            <div class="subtitle">Create Administrator Account</div>
+        </div>
+
+        <div class="info-message">
+            <strong>Note:</strong> Admin registration requires a valid referral key. Contact an existing administrator to obtain one.
+        </div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required minlength="3" maxlength="50" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" required autocomplete="name">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+                <div class="password-requirements">
+                    Must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
+            </div>
+
+            <div class="form-group">
+                <label for="referral_key">Referral Key</label>
+                <input type="text" id="referral_key" name="referral_key" required minlength="32" placeholder="Enter the referral key provided by an admin">
+            </div>
+
+            <button type="submit" class="btn" id="registerBtn">
+                <span id="btnText">Create Account</span>
+                <div class="spinner" id="spinner"></div>
+            </button>
+        </form>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="links">
+            <a href="/login">Already have an account? Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const full_name = document.getElementById('full_name').value;
+            const password = document.getElementById('password').value;
+            const confirm_password = document.getElementById('confirm_password').value;
+            const referral_key = document.getElementById('referral_key').value;
+
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            const registerBtn = document.getElementById('registerBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
+
+            // Reset messages
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // Validate passwords match
+            if (password !== confirm_password) {
+                errorDiv.textContent = 'Passwords do not match';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Validate password requirements
+            if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+                errorDiv.textContent = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Show loading
+            registerBtn.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_URL}/admin/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        full_name,
+                        password,
+                        referral_key
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    successDiv.textContent = 'Account created successfully! Redirecting to login...';
+                    successDiv.style.display = 'block';
+
+                    // Clear form
+                    document.getElementById('registerForm').reset();
+
+                    // Redirect to login
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    errorDiv.textContent = data.detail || 'Registration failed. Please check your referral key.';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            } finally {
+                registerBtn.disabled = false;
+                btnText.style.display = 'inline';
+                spinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

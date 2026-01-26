@@ -308,7 +308,7 @@
   height: 40px;
   background-color: #2563eb;
   pointer-events: none;
-  z-index: 0;
+  z-index: 9999;
   transform: translate(-50%, -50%);
   transition: left 0.1s ease-out, top 0.1s ease-out;
   animation: mouseCursorBlink 1s ease-in-out infinite;
