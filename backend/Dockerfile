@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libgdk-pixbuf-2.0-dev \
     libffi-dev \
     shared-mime-info \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
