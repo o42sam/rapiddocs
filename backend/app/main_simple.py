@@ -80,18 +80,20 @@ app = FastAPI(
     openapi_url=None  # Disable automatic openapi
 )
 
-# CORS
+# CORS - Use settings or fallback to hardcoded
+cors_origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, 'CORS_ORIGINS') and settings.CORS_ORIGINS else [
+    "https://rapiddocs.io",
+    "https://www.rapiddocs.io",
+    "https://rapiddocs-9a3f8.web.app",
+    "https://rapiddocs.web.app",
+    "https://rapiddocs.firebaseapp.com",
+    "http://localhost:5173",
+    "http://localhost:5174"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://rapiddocs.web.app",
-        "https://rapiddocs.firebaseapp.com",
-        "https://rapiddocs.io",
-        "https://www.rapiddocs.io",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "*"
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,14 +115,7 @@ async def check_auth_or_frontend(request: Request, credentials: Optional[HTTPAut
     origin = request.headers.get("origin", "")
     referer = request.headers.get("referer", "")
 
-    allowed_origins = [
-        "https://rapiddocs.web.app",
-        "https://rapiddocs.firebaseapp.com",
-        "https://rapiddocs.io",
-        "https://www.rapiddocs.io",
-        "http://localhost:5173",
-        "http://localhost:5174"
-    ]
+    allowed_origins = cors_origins  # Use the same origins as CORS config
 
     # If request is from allowed frontend, allow it
     for allowed in allowed_origins:
