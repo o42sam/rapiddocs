@@ -1,0 +1,51 @@
+URGENT: Fix CORS Issue on VPS
+===============================
+
+The backend API is currently rejecting browser requests from https://rapiddocs.io
+because the CORS configuration only allows https://rapiddocs-9a3f8.web.app
+
+TO FIX THIS ISSUE:
+
+1. SSH into the VPS:
+   ssh root@api.rapiddocs.io
+
+2. Navigate to the backend directory:
+   cd /root/rapiddocs-backend
+
+3. Download and run the fix script:
+   wget https://raw.githubusercontent.com/o42sam/rapiddocs/master/backend/vps-cors-fix.sh
+   bash vps-cors-fix.sh
+
+OR manually:
+
+1. SSH into the VPS:
+   ssh root@api.rapiddocs.io
+
+2. Navigate to backend:
+   cd /root/rapiddocs-backend
+
+3. Edit .env.production and change the CORS_ORIGINS line to:
+   CORS_ORIGINS=https://rapiddocs.io,https://www.rapiddocs.io,https://rapiddocs-9a3f8.web.app,https://rapiddocs.web.app,https://rapiddocs.firebaseapp.com
+
+4. Restart the container:
+   docker-compose down
+   docker-compose up -d
+
+5. Verify it works:
+   curl -I -X OPTIONS https://api.rapiddocs.io/auth/login \
+       -H "Origin: https://rapiddocs.io" \
+       -H "Access-Control-Request-Method: POST" \
+       2>&1 | grep "Access-Control-Allow-Origin"
+
+   Should show: Access-Control-Allow-Origin: https://rapiddocs.io
+
+WHAT THIS FIXES:
+- Browser authentication from https://rapiddocs.io
+- CORS preflight requests
+- The net::ERR_FAILED error
+
+AFTER FIXING:
+Users will be able to log in with:
+- Email: test@rapiddocs.io
+- Password: testuser
+- Credits: 999,999 (for testing all document types)
