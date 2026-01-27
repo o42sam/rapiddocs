@@ -1,0 +1,61 @@
+MANUAL FIX COMMANDS FOR VPS
+============================
+
+Run these commands on the VPS to fix the CORS issue:
+
+# 1. Update the main_simple.py file directly
+cd /home/docgen/backend
+cp /home/docgen/rapiddocs/backend/app/main_simple.py /home/docgen/backend/app/main_simple.py
+
+# 2. Verify the CORS configuration in .env.production
+grep CORS_ORIGINS .env.production
+# Should show: CORS_ORIGINS=https://rapiddocs.io,https://www.rapiddocs.io,https://rapiddocs-9a3f8.web.app,https://rapiddocs.web.app,https://rapiddocs.firebaseapp.com
+
+# 3. Force rebuild the Docker container (no cache)
+docker-compose down
+docker-compose build --no-cache backend
+docker-compose up -d
+
+# 4. Wait a bit for container to start
+sleep 10
+
+# 5. Test if it works
+curl -I -X OPTIONS https://api.rapiddocs.io/auth/login \
+    -H "Origin: https://rapiddocs.io" \
+    -H "Access-Control-Request-Method: POST"
+
+# Should see: Access-Control-Allow-Origin: https://rapiddocs.io
+
+# 6. Test authentication
+curl -X POST https://api.rapiddocs.io/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"test@rapiddocs.io","password":"testuser"}'
+
+# Should see JSON with access_token
+
+ALTERNATIVE: Complete file sync
+================================
+If the above doesn't work, sync all files:
+
+cd /home/docgen/rapiddocs
+git pull origin master
+
+# Copy ALL backend files
+cp -r /home/docgen/rapiddocs/backend/app/* /home/docgen/backend/app/
+
+# Rebuild container
+cd /home/docgen/backend
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+
+DEBUGGING: Check what's in the container
+=========================================
+# See what CORS setting the container is actually using
+docker exec rapiddocs-backend cat /app/.env | grep CORS
+
+# Check if main_simple.py was updated
+docker exec rapiddocs-backend grep -A5 "CORS -" /app/app/main_simple.py
+
+# Check container environment
+docker exec rapiddocs-backend printenv | grep CORS
