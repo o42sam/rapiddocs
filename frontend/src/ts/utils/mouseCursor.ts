@@ -26,8 +26,7 @@ export class MouseCursor {
     this.cursorElement.id = 'mouse-cursor';
     this.cursorElement.style.left = '0px';
     this.cursorElement.style.top = '0px';
-    this.cursorElement.style.opacity = '0'; // Initially hidden
-    this.cursorElement.style.transition = 'opacity 0.3s ease';
+    // Don't set opacity here - CSS handles it
 
     // Add to DOM - it should be behind all content
     document.body.insertBefore(this.cursorElement, document.body.firstChild);
@@ -124,7 +123,7 @@ export class MouseCursor {
    */
   private showCursor(): void {
     if (this.cursorElement && !this.isVisible) {
-      this.cursorElement.style.opacity = '1';
+      this.cursorElement.classList.add('visible');
       this.isVisible = true;
     }
   }
@@ -134,7 +133,7 @@ export class MouseCursor {
    */
   private hideCursor(): void {
     if (this.cursorElement && this.isVisible) {
-      this.cursorElement.style.opacity = '0';
+      this.cursorElement.classList.remove('visible');
       this.isVisible = false;
     }
   }

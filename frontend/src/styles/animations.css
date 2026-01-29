@@ -310,7 +310,12 @@
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
-  transition: left 0.1s ease-out, top 0.1s ease-out;
+  transition: left 0.1s ease-out, top 0.1s ease-out, opacity 0.3s ease;
+  opacity: 0; /* Initially hidden */
+}
+
+/* Class to enable blinking when visible */
+#mouse-cursor.visible {
   animation: mouseCursorBlink 1s ease-in-out infinite;
 }
 
