@@ -1,4 +1,5 @@
 import { documentApi } from '../api/endpoints';
+import { apiClient } from '../api/client';
 import { DocumentGenerationRequest, JobStatusResponse } from '../types/document';
 import { validateDescription, validateLength, validateFile } from '../utils/validation';
 import { ColorPalette } from './ColorPalette';
@@ -369,12 +370,13 @@ export class DocumentForm {
       const formData = new FormData();
       formData.append('description', description);
 
-      const response = await fetch('http://localhost:8000/api/v1/validate/invoice', {
-        method: 'POST',
-        body: formData
+      const response = await apiClient.post('/validate/invoice', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (!result.is_complete) {
         // Show dialog with missing fields
