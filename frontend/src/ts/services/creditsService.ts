@@ -34,7 +34,7 @@ class CreditsService {
   async getPackages(): Promise<CreditsPackage[]> {
     try {
       const response = await apiClient.get<{ packages: CreditsPackage[] }>(
-        `/auth/credits/packages`
+        `/credits/packages`
       );
       return response.data.packages;
     } catch (error) {
@@ -51,7 +51,7 @@ class CreditsService {
   async getBalance(): Promise<CreditsBalanceResponse> {
     try {
       const response = await apiClient.get<CreditsBalanceResponse>(
-        `/auth/credits/balance`
+        `/credits/balance`
       );
       return response.data;
     } catch (error) {
@@ -63,7 +63,7 @@ class CreditsService {
 
   async purchaseCredits(purchaseData: CreditsPurchaseRequest): Promise<CreditsPurchaseResponse> {
     const response = await apiClient.post<CreditsPurchaseResponse>(
-      `/auth/credits/purchase`,
+      `/credits/purchase`,
       purchaseData
     );
     return response.data;
@@ -71,14 +71,14 @@ class CreditsService {
 
   async getDocumentCost(documentType: string): Promise<DocumentCost> {
     const response = await apiClient.get<DocumentCost>(
-      `/auth/credits/cost/${documentType}`
+      `/credits/cost/${documentType}`
     );
     return response.data;
   }
 
   async deductCredits(documentType: string): Promise<{ message: string; credits_deducted: number; new_balance: number }> {
     const response = await apiClient.post(
-      `/auth/credits/deduct`,
+      `/credits/deduct`,
       null,
       {
         params: { document_type: documentType }
