@@ -39,8 +39,9 @@ class MockAuthService {
     };
 
     const response: AuthResponse = {
-      user: newUser,
-      tokens: this.mockTokens
+      access_token: this.mockTokens.access_token,
+      refresh_token: this.mockTokens.refresh_token,
+      token_type: this.mockTokens.token_type
     };
 
     // Store in localStorage to simulate persistence
@@ -59,8 +60,9 @@ class MockAuthService {
     // Check if it's a demo account
     if (credentials.email === 'demo@rapiddocs.io' && credentials.password === 'demo123') {
       const response: AuthResponse = {
-        user: this.mockUser,
-        tokens: this.mockTokens
+        access_token: this.mockTokens.access_token,
+        refresh_token: this.mockTokens.refresh_token,
+        token_type: this.mockTokens.token_type
       };
 
       localStorage.setItem('mock_user', JSON.stringify(this.mockUser));
@@ -77,8 +79,9 @@ class MockAuthService {
       const user = JSON.parse(storedUser);
       if (user.email === credentials.email) {
         const response: AuthResponse = {
-          user,
-          tokens: this.mockTokens
+          access_token: this.mockTokens.access_token,
+          refresh_token: this.mockTokens.refresh_token,
+          token_type: this.mockTokens.token_type
         };
 
         localStorage.setItem('access_token', this.mockTokens.access_token);
@@ -105,8 +108,9 @@ class MockAuthService {
     };
 
     const response: AuthResponse = {
-      user: googleUser,
-      tokens: this.mockTokens
+      access_token: this.mockTokens.access_token,
+      refresh_token: this.mockTokens.refresh_token,
+      token_type: this.mockTokens.token_type
     };
 
     localStorage.setItem('mock_user', JSON.stringify(googleUser));

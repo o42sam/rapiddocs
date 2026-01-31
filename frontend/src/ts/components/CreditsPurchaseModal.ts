@@ -481,7 +481,7 @@ export class CreditsPurchaseModal {
         if (currentUser) {
           authState.setAuthenticated({
             ...currentUser,
-            credits: currentUser.credits + status.credits
+            credits: (currentUser.credits || 0) + status.credits
           });
         }
 

@@ -22,17 +22,21 @@ export interface AuthTokens {
 export interface User {
   id: string;
   email: string;
-  username: string;
+  name?: string;
+  username?: string;
   full_name?: string;
-  credits: number;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
+  credits?: number;
+  is_active?: boolean;
+  is_verified?: boolean;
+  is_admin?: boolean;
+  is_superuser?: boolean;
+  created_at?: string;
 }
 
 export interface AuthResponse {
-  user: User;
-  tokens: AuthTokens;
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
 }
 
 class AuthService {
@@ -42,13 +46,27 @@ class AuthService {
 
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>(`/auth/register`, data);
-    this.saveAuth(response.data);
+    // Save tokens directly from response
+    this.saveTokens(response.data);
+    // Try to fetch user data separately
+    try {
+      await this.getCurrentUser();
+    } catch (error) {
+      console.log('Could not fetch user data after registration:', error);
+    }
     return response.data;
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>(`/auth/login`, credentials);
-    this.saveAuth(response.data);
+    // Save tokens directly from response
+    this.saveTokens(response.data);
+    // Try to fetch user data separately
+    try {
+      await this.getCurrentUser();
+    } catch (error) {
+      console.log('Could not fetch user data after login:', error);
+    }
     return response.data;
   }
 
@@ -99,12 +117,7 @@ class AuthService {
     return response.data;
   }
 
-  private saveAuth(authResponse: AuthResponse): void {
-    this.saveTokens(authResponse.tokens);
-    this.saveUser(authResponse.user);
-  }
-
-  private saveTokens(tokens: AuthTokens): void {
+  private saveTokens(tokens: AuthResponse | AuthTokens): void {
     localStorage.setItem(this.TOKEN_KEY, tokens.access_token);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refresh_token);
   }

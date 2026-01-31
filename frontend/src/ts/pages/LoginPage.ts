@@ -197,13 +197,16 @@ export class LoginPage {
     errorMessage?.classList.add('hidden');
 
     try {
-      const response = await authService.login({
+      await authService.login({
         email: emailInput.value,
         password: passwordInput.value
       });
 
+      // Get user data after successful login
+      const user = await authService.getCurrentUser();
+
       // Set authenticated state
-      authState.setAuthenticated(response.user);
+      authState.setAuthenticated(user);
 
       // Small delay to ensure state propagates before navigation
       await new Promise(resolve => setTimeout(resolve, 50));
