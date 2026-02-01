@@ -246,18 +246,78 @@ async def register(request: Request, registration: UserRegister):
 
 @router.get("/me", response_model=User)
 async def get_current_user(request: Request):
-    """Get current user information."""
-    # This would normally require authentication middleware
-    # For now, returning a test response
+    """Get current user information from database based on JWT token."""
+    # Get authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header"
+        )
+
+    token = auth_header.replace("Bearer ", "")
+
+    try:
+        # Decode the access token
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
+        )
+
+        if payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type"
+            )
+
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired"
+        )
+    except jwt.JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+
+    # Fetch user from database
+    db = request.app.state.db
+
+    # Try to find by ObjectId first
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except:
+        user = None
+
+    # If not found, try by id field
+    if not user:
+        user = await db.users.find_one({"id": user_id})
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Return real user data from database
     return User(
-        id="test",
-        email="test@example.com",
-        username="testuser",
-        full_name="Test User",
-        credits=100,
-        is_active=True,
-        is_verified=True,
-        created_at=str(datetime.utcnow())
+        id=str(user["_id"]),
+        email=user["email"],
+        username=user.get("username", user["email"]),
+        full_name=user.get("full_name") or user.get("fullName") or user.get("displayName", ""),
+        credits=user.get("credits", 0),
+        is_active=user.get("is_active", True),
+        is_verified=user.get("emailVerified", False),
+        created_at=str(user.get("created_at", user.get("createdAt", datetime.utcnow())))
     )
 
 @router.post("/logout")
