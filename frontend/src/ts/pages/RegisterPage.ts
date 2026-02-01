@@ -262,18 +262,16 @@ export class RegisterPage {
     errorMessage?.classList.add('hidden');
 
     try {
-      await authService.register({
+      // Register returns {user, tokens} - user data is saved automatically
+      const response = await authService.register({
         username: usernameInput.value,
         email: emailInput.value,
         password: passwordInput.value,
         full_name: fullNameInput.value || undefined
       });
 
-      // Get user data after successful registration
-      const user = await authService.getCurrentUser();
-
-      // Set authenticated state
-      authState.setAuthenticated(user);
+      // Set authenticated state with user from register response
+      authState.setAuthenticated(response.user);
 
       // Small delay to ensure state propagates before navigation
       await new Promise(resolve => setTimeout(resolve, 50));

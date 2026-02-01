@@ -43,6 +43,9 @@ class AuthResponse(BaseModel):
     user: User
     tokens: AuthTokens
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 router = APIRouter(prefix="/auth", tags=["User Auth"])
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -327,12 +330,12 @@ async def logout(request: Request):
     return {"message": "Logged out successfully"}
 
 @router.post("/refresh", response_model=AuthTokens)
-async def refresh_token(request: Request, refresh_token: str):
+async def refresh_token(request: Request, body: RefreshTokenRequest):
     """Refresh access token."""
     try:
         # Decode refresh token
         payload = jwt.decode(
-            refresh_token,
+            body.refresh_token,
             settings.JWT_REFRESH_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM]
         )

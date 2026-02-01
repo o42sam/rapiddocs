@@ -33,10 +33,10 @@ export interface User {
   created_at?: string;
 }
 
+// Backend returns nested structure: {user: {...}, tokens: {...}}
 export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
+  user: User;
+  tokens: AuthTokens;
 }
 
 class AuthService {
@@ -46,27 +46,19 @@ class AuthService {
 
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>(`/auth/register`, data);
-    // Save tokens directly from response
-    this.saveTokens(response.data);
-    // Try to fetch user data separately
-    try {
-      await this.getCurrentUser();
-    } catch (error) {
-      console.log('Could not fetch user data after registration:', error);
-    }
+    // Backend returns {user: {...}, tokens: {...}}
+    this.saveTokens(response.data.tokens);
+    // User data is already in the response, save it directly
+    this.saveUser(response.data.user);
     return response.data;
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>(`/auth/login`, credentials);
-    // Save tokens directly from response
-    this.saveTokens(response.data);
-    // Try to fetch user data separately
-    try {
-      await this.getCurrentUser();
-    } catch (error) {
-      console.log('Could not fetch user data after login:', error);
-    }
+    // Backend returns {user: {...}, tokens: {...}}
+    this.saveTokens(response.data.tokens);
+    // User data is already in the response, save it directly
+    this.saveUser(response.data.user);
     return response.data;
   }
 
@@ -117,7 +109,7 @@ class AuthService {
     return response.data;
   }
 
-  private saveTokens(tokens: AuthResponse | AuthTokens): void {
+  private saveTokens(tokens: AuthTokens): void {
     localStorage.setItem(this.TOKEN_KEY, tokens.access_token);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refresh_token);
   }
