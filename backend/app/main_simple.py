@@ -579,9 +579,17 @@ async def generate_document(
 
             logger.info(f"Processing formal document generation for job {job_id}")
             logger.info(f"User description: {description}")
+            logger.info(f"Requested length from form: {length} words")
 
             # Extract document parameters from user prompt using Gemini
             document_data = await gemini_service.extract_formal_document_data(description)
+
+            # Use the length from the form field as the primary word count
+            # This overrides any word count extracted from the prompt
+            if length and length > 0:
+                document_data["word_count"] = length
+                logger.info(f"Using form length: {length} words")
+
             logger.info(f"Extracted document data: title='{document_data.get('title')}', word_count={document_data.get('word_count')}")
 
             # Generate the document content using Gemini

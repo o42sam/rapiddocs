@@ -438,21 +438,34 @@ class GeminiService:
 
         Title: {title}
         Topic/Subject: {topic}
-        Target word count: approximately {word_count} words
         Tone: {tone}
         {sections_text}
 
-        IMPORTANT FORMATTING RULES:
+        **CRITICAL WORD COUNT REQUIREMENT**:
+        The document MUST be exactly {word_count} words (within +/- 50 words).
+        This is a strict requirement - do NOT generate a shorter document.
+        If {word_count} words seems long, expand each section with more detail, examples, analysis, and supporting arguments.
+        Count your words and ensure you meet this requirement.
+
+        FORMATTING RULES:
         1. DO NOT use bullet points (•, -, *) for any enumeration
         2. For lists and enumeration, use ONLY:
            - Numbers (1, 2, 3, etc.) for main points
            - Letters (a, b, c, etc.) for sub-points
            - Roman numerals (i, ii, iii, etc.) for sub-sub-points
         3. Use proper paragraph structure with clear topic sentences
-        4. Include an introduction and conclusion
+        4. Include a comprehensive introduction and conclusion
         5. Use formal language appropriate for {tone} documents
         6. Do not use markdown formatting (no #, **, etc.)
         7. Use proper spacing between paragraphs
+
+        STRUCTURE FOR A {word_count}-WORD DOCUMENT:
+        - Introduction: ~{max(100, word_count // 10)} words
+        - Main body sections: ~{word_count - (word_count // 5)} words total (divide among sections)
+        - Conclusion: ~{max(100, word_count // 10)} words
+
+        Each section should have multiple paragraphs with detailed explanations, examples, and analysis.
+        Do not use filler content - make every sentence substantive and informative.
 
         Example of correct enumeration:
         1. First main point
@@ -463,7 +476,7 @@ class GeminiService:
         2. Second main point
 
         Generate professional, well-structured content that reads naturally and flows logically.
-        The document should be substantive and informative, not generic filler text.
+        Remember: The document MUST be {word_count} words. This is mandatory.
         """
 
         try:
@@ -563,59 +576,304 @@ class GeminiService:
         title = document_data.get("title", "Document")
         topic = document_data.get("topic", "")
         word_count = document_data.get("word_count", 500)
-        tone = document_data.get("tone", "professional")
 
-        # Generate a structured fallback document
-        content = f"""{title}
+        # Get all available sections as (content, word_count) tuples
+        all_sections = self._get_all_formal_sections(title, topic)
+
+        # Select sections based on target word count
+        selected_sections = []
+        current_words = 0
+
+        for content, words in all_sections:
+            # Check if adding this section would go too far over target
+            would_be_over = current_words + words - word_count
+            # Add section if: under target, or if it wouldn't go too far over (150 word buffer)
+            if current_words < word_count and would_be_over <= 150:
+                selected_sections.append(content)
+                current_words += words
+            # Stop if we've reached or exceeded target
+            if current_words >= word_count - 50:
+                break
+
+        # If still significantly under target, add appendices
+        if current_words < word_count - 100:
+            additional = self._generate_additional_content(topic, word_count - current_words + 50)
+            selected_sections.append(additional)
+
+        return "\n".join(selected_sections)
+
+    def _get_all_formal_sections(self, title: str, topic: str) -> list:
+        """Return all formal document sections as (content, word_count) tuples"""
+        sections = []
+
+        # Introduction (~120 words)
+        intro = f"""{title}
 
 Introduction
 
-This document provides a comprehensive overview of {topic}. The following sections outline the key aspects, considerations, and recommendations relevant to this subject matter.
+This document provides a comprehensive analysis and detailed examination of {topic}. The purpose of this document is to present a thorough overview of the subject matter, examining key aspects, relevant considerations, and actionable recommendations. The information presented herein has been compiled to support informed decision-making and strategic planning processes.
 
+The scope of this analysis encompasses multiple dimensions of the topic, including historical context, current state assessment, future projections, and implementation guidance. Each section builds upon the previous to create a cohesive understanding of the subject matter and its implications for stakeholders.
+
+Throughout this document, emphasis is placed on practical applications and real-world relevance. The analysis considers both immediate tactical concerns and longer-term strategic objectives, providing a balanced perspective that serves diverse stakeholder needs."""
+        sections.append((intro, len(intro.split())))
+
+        # Section 1: Background and Context (~350 words)
+        section1 = f"""
 1. Background and Context
 
-The subject of {topic} has gained significant attention in recent years. Understanding the fundamental aspects is essential for proper assessment and decision-making.
+The subject of {topic} has emerged as a critical area of focus in recent years, driven by evolving market dynamics, technological advancements, and shifting stakeholder expectations. Understanding the historical development and current positioning of this topic is essential for contextualizing subsequent analysis and recommendations.
 
-   a. Historical Development
-   The evolution of this topic reflects broader trends in the field. Key milestones include initial recognition of the importance, subsequent research and development, and current state-of-the-art practices.
+   a. Historical Development and Evolution
 
-   b. Current Relevance
-   In today's context, this subject matter holds particular significance due to:
-      i. Changing regulatory requirements
-      ii. Evolving best practices
-      iii. Increased stakeholder expectations
+   The trajectory of development in this area reflects broader industry trends and societal shifts. Initial recognition of the importance of this subject matter can be traced to foundational work that established core principles and frameworks. Subsequent phases of development have been characterized by refinement, expansion, and adaptation to changing circumstances.
 
-2. Key Considerations
+   Key milestones in this evolution include the establishment of standardized practices, the emergence of specialized expertise, and the integration of technological solutions. Each phase has contributed to the current understanding and approach to the subject matter, building a foundation for continued advancement.
 
-Several factors merit careful attention when addressing this topic:
+   The lessons learned from historical developments inform current best practices and guide future directions. Understanding this context enables more effective planning and decision-making, allowing stakeholders to build upon established foundations while avoiding previously identified pitfalls.
 
-   a. Primary Factors
-   The most critical elements include thorough analysis, stakeholder engagement, and strategic planning.
+   b. Current State Assessment
 
-   b. Secondary Factors
-   Supporting considerations encompass resource allocation, timeline management, and quality assurance.
+   In the present context, this subject matter occupies a position of significant importance within the broader landscape. Current approaches reflect accumulated knowledge and experience, incorporating lessons learned and adapting to contemporary requirements.
 
-3. Recommendations
+   The present state is characterized by:
+      i. Increased sophistication in analytical methods and frameworks
+      ii. Greater integration with complementary disciplines and functions
+      iii. Enhanced focus on measurable outcomes and accountability
+      iv. Growing emphasis on stakeholder engagement and communication
 
-Based on the analysis presented, the following recommendations are proposed:
+   Assessment of the current state reveals both strengths to leverage and opportunities for improvement. The foundation established by previous efforts provides a solid base for continued development, while identified gaps present clear directions for enhancement.
 
-   a. Short-term Actions
-      i. Conduct comprehensive assessment
-      ii. Engage relevant stakeholders
-      iii. Develop implementation framework
+   c. Relevance and Significance
 
-   b. Long-term Strategy
-      i. Establish monitoring mechanisms
-      ii. Plan for continuous improvement
-      iii. Document lessons learned
+   The significance of this topic extends across multiple dimensions, affecting various stakeholders and organizational functions. Recognition of this relevance is essential for securing appropriate attention and resources for related initiatives.
 
-4. Conclusion
+   Factors contributing to current relevance include:
+      i. Changing regulatory and compliance requirements
+      ii. Evolving best practices and industry standards
+      iii. Increased stakeholder expectations and demands
+      iv. Competitive pressures and market dynamics
+      v. Technological capabilities and opportunities"""
+        sections.append((section1, len(section1.split())))
 
-This document has outlined the essential aspects of {topic}. The recommendations provided offer a structured approach to addressing the relevant challenges and opportunities. Implementation should proceed with careful attention to the factors identified herein.
+        # Section 2: Analysis and Considerations (~400 words)
+        section2 = f"""
+2. Detailed Analysis and Key Considerations
 
-The success of any initiative in this area depends on commitment to excellence, stakeholder collaboration, and adherence to established best practices. Continued attention to emerging developments will ensure sustained relevance and effectiveness.
-"""
-        return content
+A thorough analysis of {topic} requires examination of multiple factors and their interrelationships. This section presents a systematic review of critical elements, providing the analytical foundation for subsequent recommendations.
+
+   a. Primary Strategic Factors
+
+   The most critical elements requiring attention include comprehensive analytical assessment, meaningful stakeholder engagement, and strategic planning alignment. Each of these factors plays a vital role in determining outcomes and should receive appropriate prioritization.
+
+   Comprehensive analytical assessment involves systematic evaluation of relevant data, trends, and indicators. This analysis should consider both quantitative metrics and qualitative factors, providing a balanced view of the current situation and future trajectory. Rigorous analysis enables informed decision-making and helps identify priorities for action.
+
+   Meaningful stakeholder engagement ensures that diverse perspectives are considered and that those affected by decisions have appropriate input into the process. Effective engagement builds support for initiatives, identifies potential concerns early, and enhances the quality of outcomes through broader input.
+
+   Strategic planning alignment ensures that efforts related to this topic support and advance broader organizational objectives. Alignment prevents duplication of effort, ensures efficient resource utilization, and maximizes the impact of investments in this area.
+
+   b. Operational and Tactical Factors
+
+   Supporting considerations at the operational level encompass resource allocation, timeline management, and quality assurance processes. These factors directly influence implementation success and should be carefully managed throughout the initiative lifecycle.
+
+   Resource allocation decisions determine the capacity available for initiative execution. Appropriate resourcing requires accurate assessment of requirements, realistic estimation of costs, and alignment with available budgets. Under-resourcing leads to compromised outcomes, while over-resourcing diverts capacity from other priorities.
+
+   Timeline management ensures that activities proceed according to plan and that dependencies are appropriately sequenced. Effective timeline management includes milestone identification, progress monitoring, and adjustment mechanisms for addressing variances from plan.
+
+   Quality assurance processes ensure that deliverables meet established standards and that outcomes align with expectations. Quality considerations should be integrated throughout the initiative lifecycle, not addressed only at completion.
+
+   c. Risk Assessment and Mitigation
+
+   Effective management of {topic} requires identification and mitigation of associated risks. Risk assessment should consider both internal and external factors that could affect outcomes.
+
+   Key risk categories include:
+      i. Strategic risks related to alignment and direction
+      ii. Operational risks affecting execution and delivery
+      iii. Financial risks impacting resource availability
+      iv. Reputational risks affecting stakeholder relationships
+      v. Compliance risks related to regulatory requirements
+
+   For each identified risk, appropriate mitigation strategies should be developed and implemented. Risk monitoring should continue throughout implementation, with adjustments made as circumstances evolve."""
+        sections.append((section2, len(section2.split())))
+
+        # Section 3: Recommendations (~450 words)
+        section3 = f"""
+3. Recommendations and Implementation Guidance
+
+Based on the analysis presented in preceding sections, the following recommendations are proposed for addressing {topic}. These recommendations are organized by timeframe and priority to facilitate implementation planning.
+
+   a. Immediate Actions (0-3 Months)
+
+   Short-term actions focus on establishing foundations and addressing urgent priorities. These actions should be initiated promptly to build momentum and demonstrate commitment.
+
+      i. Conduct Comprehensive Assessment
+      Commission a detailed assessment of current state, identifying strengths, weaknesses, opportunities, and threats. This assessment should engage key stakeholders and leverage available data and expertise. Assessment findings will inform subsequent planning and prioritization.
+
+      ii. Engage Key Stakeholders
+      Initiate structured engagement with stakeholders to communicate intent, gather input, and build support. Stakeholder engagement should be ongoing throughout implementation, not a one-time activity. Early engagement helps identify concerns and builds coalition support.
+
+      iii. Develop Implementation Framework
+      Create a structured framework for implementation, including governance mechanisms, resource plans, and success metrics. The framework should provide clear guidance while allowing flexibility for adaptation as circumstances evolve.
+
+      iv. Establish Quick Wins
+      Identify and pursue opportunities for early successes that demonstrate value and build confidence. Quick wins generate momentum, validate approaches, and provide learning opportunities that inform subsequent efforts.
+
+   b. Medium-Term Initiatives (3-12 Months)
+
+   Medium-term initiatives build upon immediate actions and advance toward strategic objectives. These initiatives require sustained effort and resource commitment.
+
+      i. Implement Core Capabilities
+      Deploy foundational capabilities required for long-term success. Capability development should follow the established framework and incorporate lessons learned from initial activities.
+
+      ii. Integrate with Existing Processes
+      Ensure that new approaches integrate effectively with existing organizational processes and systems. Integration reduces friction, enhances adoption, and maximizes return on investment.
+
+      iii. Develop Measurement Systems
+      Establish robust measurement systems that track progress, evaluate outcomes, and inform continuous improvement. Measurement should address both leading indicators that predict future performance and lagging indicators that assess results.
+
+      iv. Build Organizational Capability
+      Invest in developing organizational capability through training, knowledge sharing, and skill development. Sustainable success requires broad organizational capability, not dependence on individual experts.
+
+   c. Long-Term Strategy (12+ Months)
+
+   Long-term strategic initiatives position the organization for sustained success and continued advancement in {topic}.
+
+      i. Establish Monitoring and Adaptation Mechanisms
+      Implement systems for ongoing monitoring of the environment and organizational performance. Monitoring enables early identification of emerging challenges and opportunities, supporting timely adaptation.
+
+      ii. Plan for Continuous Improvement
+      Embed continuous improvement principles into ongoing operations. Regular review cycles should assess performance, identify improvement opportunities, and implement enhancements.
+
+      iii. Document and Share Lessons Learned
+      Capture and disseminate lessons learned throughout implementation. Documentation supports organizational learning and helps avoid repetition of mistakes.
+
+      iv. Evolve Strategy Based on Results
+      Regularly review and update strategy based on implementation experience and changing circumstances. Strategy should be treated as a living document, subject to refinement as understanding deepens."""
+        sections.append((section3, len(section3.split())))
+
+        # Section 4: Conclusion (~200 words)
+        section4 = f"""
+4. Conclusion and Summary
+
+This document has presented a comprehensive analysis of {topic}, examining background context, current state assessment, key considerations, and recommended actions. The analysis reveals both the significance of this subject matter and the opportunities available for improvement and advancement.
+
+The recommendations provided offer a structured approach to addressing the challenges and opportunities identified. Implementation should proceed with careful attention to the factors discussed, maintaining focus on desired outcomes while remaining adaptable to changing circumstances.
+
+Success in this area depends on sustained commitment, effective stakeholder collaboration, and adherence to established best practices. Leadership support, adequate resourcing, and clear accountability are essential enablers that must be maintained throughout implementation.
+
+The path forward requires balancing ambition with pragmatism, pursuing meaningful improvements while managing risks and resource constraints. Progress should be measured against clear metrics, with regular review cycles enabling course correction as needed.
+
+Continued attention to emerging developments in {topic} will be essential for maintaining relevance and effectiveness over time. The landscape continues to evolve, and approaches must evolve accordingly. Investment in ongoing learning and adaptation will position the organization for sustained success.
+
+In conclusion, the subject matter addressed in this document merits continued attention and investment. The analysis and recommendations presented provide a foundation for action, while acknowledging that implementation will require ongoing effort and adaptation. With appropriate commitment and execution, the objectives outlined herein are achievable, delivering meaningful value to stakeholders and advancing organizational objectives."""
+        sections.append((section4, len(section4.split())))
+
+        return sections
+
+    def _generate_additional_content(self, topic: str, words_needed: int) -> str:
+        """Generate additional content paragraphs to meet word count target"""
+        additional_paragraphs = []
+
+        # Generate enough paragraphs to meet the word count
+        paragraph_templates = [
+            f"""
+
+Appendix A: Detailed Implementation Considerations
+
+The implementation of initiatives related to {topic} requires attention to numerous practical considerations that influence success. This appendix provides additional detail on key implementation factors.
+
+Resource planning must account for both direct costs and indirect investments required for success. Direct costs include personnel time, technology investments, and external expertise. Indirect investments include opportunity costs, training requirements, and organizational change management efforts. Comprehensive resource planning prevents mid-implementation surprises that can derail progress.
+
+Change management considerations are particularly important given the organizational impact of initiatives in this area. Effective change management addresses the human dimensions of change, including communication, training, and support systems. Resistance to change is natural and should be anticipated and addressed proactively.
+
+Technology considerations may include both enabling systems and integration requirements. Technology decisions should be driven by business requirements rather than technical preferences. Integration with existing systems is often more challenging and important than new system implementation.""",
+
+            f"""
+
+Appendix B: Stakeholder Analysis and Engagement Strategy
+
+Effective stakeholder engagement requires systematic analysis of stakeholder interests, influence, and engagement preferences. This appendix outlines key considerations for stakeholder management.
+
+Stakeholder identification should be comprehensive, considering all parties who may be affected by or who may influence initiatives related to {topic}. Stakeholders may include internal parties such as leadership, management, and staff, as well as external parties including customers, partners, regulators, and communities.
+
+For each stakeholder group, analysis should assess their interests in the initiative, their potential influence on outcomes, and their current disposition toward proposed changes. This analysis informs engagement strategy, helping prioritize effort and tailor approaches to different stakeholder needs.
+
+Engagement approaches should be matched to stakeholder characteristics and requirements. Some stakeholders require detailed information and involvement in decision-making, while others need only periodic updates. Resource-efficient engagement focuses effort where it will have the greatest impact.""",
+
+            f"""
+
+Appendix C: Performance Metrics and Evaluation Framework
+
+Measurement of progress and outcomes is essential for effective management of {topic}. This appendix outlines a framework for performance measurement and evaluation.
+
+Key performance indicators should address multiple dimensions of performance, including implementation progress, operational outcomes, and strategic impact. Balanced measurement prevents overemphasis on any single dimension and provides comprehensive visibility into initiative health.
+
+Leading indicators predict future performance and enable proactive management. Examples include stakeholder sentiment, resource utilization, and milestone completion rates. Monitoring leading indicators enables early intervention when performance diverges from expectations.
+
+Lagging indicators assess actual outcomes and results. Examples include objective achievement, benefit realization, and stakeholder satisfaction. Lagging indicators validate that activities are producing intended results and inform future planning.
+
+Regular reporting should communicate performance to relevant stakeholders, supporting transparency and accountability. Reports should be tailored to audience needs, with executive summaries for leadership and detailed analyses for operational management.""",
+
+            f"""
+
+Appendix D: Risk Register and Mitigation Plans
+
+Comprehensive risk management requires systematic identification, assessment, and mitigation of potential risks. This appendix documents key risks and associated mitigation strategies.
+
+Strategic risks relate to overall direction and alignment of initiatives with organizational objectives. Mitigation strategies include regular strategy review, stakeholder alignment processes, and clear governance mechanisms. Strategic risks often have the highest potential impact but may be difficult to detect early.
+
+Operational risks affect day-to-day execution and delivery of initiatives. Mitigation strategies include robust planning, adequate resourcing, and effective project management practices. Operational risks are often more predictable and manageable than strategic risks.
+
+External risks arise from factors outside organizational control, including market conditions, regulatory changes, and competitive actions. Mitigation strategies include environmental scanning, scenario planning, and building adaptive capacity. External risks require ongoing monitoring and flexible response capabilities.""",
+
+            f"""
+
+Appendix E: Implementation Timeline and Milestones
+
+Successful implementation of {topic} requires careful timeline planning with clearly defined milestones. This appendix outlines a comprehensive implementation schedule designed to ensure systematic progress toward objectives.
+
+Phase 1 activities, spanning the initial one to three months, focus on foundation building and preparation. Key milestones include completion of initial assessment, stakeholder mapping and engagement planning, resource allocation and team formation, and governance structure establishment. These foundational activities set the stage for subsequent implementation phases.
+
+Phase 2 activities, spanning months four through nine, focus on core implementation and capability building. Key milestones include deployment of primary capabilities, integration with existing systems and processes, initial outcome measurement and reporting, and adjustment based on early learnings. This phase represents the bulk of implementation effort and investment.
+
+Phase 3 activities, spanning months ten through twelve and beyond, focus on optimization and sustainability. Key milestones include full operational capability achievement, performance optimization based on experience, transition to ongoing operations, and documentation of lessons learned for future reference.""",
+
+            f"""
+
+Appendix F: Communication Strategy and Plan
+
+Effective communication is essential for success in {topic}. This appendix outlines the communication strategy and specific communication activities planned throughout implementation.
+
+Communication objectives include building awareness and understanding of the initiative, engaging stakeholders in meaningful dialogue, providing transparency regarding progress and challenges, and celebrating successes and recognizing contributions. Each objective requires specific communication activities and channels.
+
+Target audiences for communication include executive leadership requiring strategic updates and decision support, operational management requiring detailed progress information, staff requiring understanding of impacts and expectations, and external stakeholders requiring appropriate information about organizational activities.
+
+Communication channels should be selected based on message content and audience preferences. Formal channels include reports, presentations, and official announcements. Informal channels include conversations, team meetings, and collaborative platforms. Multi-channel approaches ensure messages reach intended audiences effectively.""",
+
+            f"""
+
+Appendix G: Resource Requirements and Budget Considerations
+
+Implementation of {topic} requires adequate resources allocated appropriately across the initiative lifecycle. This appendix provides detailed resource requirements and budget considerations.
+
+Personnel resources include dedicated team members responsible for implementation activities, subject matter experts providing specialized knowledge and guidance, and leadership sponsors providing direction and organizational support. Resource loading should account for both full-time dedication and part-time contributions.
+
+Financial resources include direct costs such as technology, consulting services, and training, as well as indirect costs such as personnel time and opportunity costs. Budget planning should include appropriate contingency for unexpected requirements.
+
+Technology resources may include new systems acquisition, existing system modifications, integration development, and ongoing operational support. Technology decisions should be driven by business requirements with appropriate technical input.
+
+External resources such as consultants, vendors, and partners may supplement internal capabilities. External resource engagement should be managed to ensure knowledge transfer and avoid excessive dependency."""
+        ]
+
+        # Add paragraphs until we approach the target
+        words_added = 0
+        for paragraph in paragraph_templates:
+            if words_added >= words_needed:
+                break
+            additional_paragraphs.append(paragraph)
+            words_added += len(paragraph.split())
+
+        return "\n".join(additional_paragraphs)
 
     def _clean_formal_content(self, content: str) -> str:
         """Clean up formal document content - remove markdown and bullet points"""
