@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # =============================================================================
-# RapidDocs VPS - Fix Credits Display
-# Downloads the fixed user_auth.py that returns real credits from database
+# RapidDocs VPS - Fix Credits Display & Auth
+# Downloads fixed files that return real credits from database
 # =============================================================================
 
 set -e
@@ -19,14 +19,16 @@ NC='\033[0m'
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 echo "================================================"
-echo "RapidDocs - Fix Credits Display"
+echo "RapidDocs - Fix Credits Display & Auth"
 echo "================================================"
 echo ""
-echo "This fix updates /auth/me endpoint to return"
-echo "actual user credits from database instead of"
-echo "hardcoded value (100)."
+echo "This fix:"
+echo "1. Updates /auth/me to return real credits from DB"
+echo "2. Fixes /auth/refresh to accept JSON body"
+echo "3. Fixes auth response format for frontend"
 echo ""
 
 cd "$BACKEND_DIR"
@@ -40,12 +42,10 @@ mkdir -p app/routes
 
 # Download the fixed user_auth.py from GitHub
 log_info "Downloading fixed user_auth.py from GitHub..."
-wget -O app/routes/user_auth.py "$REPO_RAW/app/routes/user_auth.py"
-
-if [ $? -eq 0 ]; then
+if wget -O app/routes/user_auth.py "$REPO_RAW/app/routes/user_auth.py"; then
     log_success "Downloaded user_auth.py successfully"
 else
-    echo -e "${RED}[ERROR]${NC} Failed to download user_auth.py"
+    log_error "Failed to download user_auth.py"
     exit 1
 fi
 
@@ -71,9 +71,17 @@ curl -s https://api.rapiddocs.io/health || echo "Health check failed"
 
 echo ""
 echo "================================================"
-log_success "Fix applied successfully!"
+log_success "Backend fix applied successfully!"
 echo "================================================"
 echo ""
-log_warn "Users need to log out and log back in to see"
-log_warn "correct credits, or clear browser localStorage."
+log_warn "IMPORTANT: Frontend also needs to be rebuilt and deployed!"
+log_warn "The frontend fix is already pushed to GitHub."
+log_warn ""
+log_warn "If using Firebase Hosting, run locally:"
+log_warn "  cd frontend && npm run build"
+log_warn "  firebase deploy --only hosting"
+log_warn ""
+log_warn "After frontend deployment, users should:"
+log_warn "1. Clear browser localStorage (or logout)"
+log_warn "2. Log back in to see correct credits"
 echo ""
