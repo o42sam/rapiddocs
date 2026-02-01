@@ -150,16 +150,20 @@ class GridFSStorage:
         try:
             # Find the file by job_id in metadata
             cursor = self.pdfs_bucket.find({"metadata.job_id": job_id})
-            async for grid_out in cursor:
+            async for file_doc in cursor:
+                # file_doc is a document with _id, we need to open a download stream
+                grid_out = await self.pdfs_bucket.open_download_stream(file_doc._id)
                 data = await grid_out.read()
                 return data
 
             # Fallback: try to find by filename
             filename = f"{job_id}.pdf"
-            cursor = self.pdfs_bucket.find({"filename": filename})
-            async for grid_out in cursor:
+            try:
+                grid_out = await self.pdfs_bucket.open_download_stream_by_name(filename)
                 data = await grid_out.read()
                 return data
+            except Exception:
+                pass  # File not found by name
 
             logger.warning(f"PDF not found in GridFS for job_id: {job_id}")
             return None
