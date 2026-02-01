@@ -89,13 +89,31 @@ sleep 15
 log_info "Container status:"
 docker-compose ps 2>/dev/null || docker compose ps
 
-# Test the endpoint
+# Test the endpoints
 echo ""
 log_info "Testing health endpoint..."
 if curl -s https://api.rapiddocs.io/health | grep -q "healthy"; then
     log_success "Health check passed!"
 else
     log_warn "Health check may have failed - please verify manually"
+fi
+
+# Quick test of formal document endpoint (without logo)
+log_info "Testing formal document generation..."
+RESPONSE=$(curl -s -X POST "https://api.rapiddocs.io/generate/document" \
+  -H "Origin: https://rapiddocs.io" \
+  -F "description=Write a brief 300 word test document about deployment verification" \
+  -F "length=300" \
+  -F "document_type=formal" \
+  -F "use_watermark=false" \
+  -F "statistics=[]" \
+  -F "design_spec={}")
+
+if echo "$RESPONSE" | grep -q '"status":"completed"'; then
+    JOB_ID=$(echo "$RESPONSE" | grep -o '"job_id":"[^"]*"' | cut -d'"' -f4)
+    log_success "Formal document test passed! Job ID: $JOB_ID"
+else
+    log_warn "Formal document test may have failed. Response: $RESPONSE"
 fi
 
 # Show recent logs
