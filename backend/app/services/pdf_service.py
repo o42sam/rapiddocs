@@ -5,7 +5,7 @@ import os
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any, Optional, Union, List
 from datetime import datetime
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
