@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form, UploadFile, File, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from contextlib import asynccontextmanager
@@ -22,6 +22,7 @@ from app.config import settings
 from app.services.gemini_service import GeminiService
 from app.services.pdf_service import PDFService
 from app.services.auth_service import AuthService
+from app.services.gridfs_storage import GridFSStorage
 from app.routes import admin, user_auth
 from app.middleware.auth import AuthMiddleware, security
 
@@ -35,12 +36,6 @@ templates = Jinja2Templates(directory="app/templates")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    # Create necessary directories
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    os.makedirs(settings.PDF_OUTPUT_DIR, exist_ok=True)
-    os.makedirs(Path(settings.PDF_OUTPUT_DIR) / "invoices", exist_ok=True)
-    os.makedirs(Path(settings.UPLOAD_DIR) / "logos", exist_ok=True)
-
     # Initialize MongoDB connection
     client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
     app.state.db = client[settings.MONGODB_DB_NAME]
@@ -50,9 +45,10 @@ async def lifespan(app: FastAPI):
     app.state.pdf_service = PDFService()
     app.state.auth_service = AuthService(app.state.db)
     app.state.auth_middleware = AuthMiddleware(app.state.auth_service)
+    app.state.gridfs_storage = GridFSStorage(app.state.db)  # GridFS for file storage
     app.state.start_time = datetime.utcnow()
 
-    logger.info("Services initialized successfully")
+    logger.info("Services initialized successfully (using MongoDB GridFS for file storage)")
 
     # Create initial superuser if none exists
     initial_creds = await app.state.auth_service.create_initial_superuser()
@@ -497,54 +493,55 @@ async def generate_document(
             # Set the invoice number to match our job ID
             invoice_data["invoice_number"] = job_id
 
-            # Handle logo upload if provided
-            logo_path = None
+            # Handle logo upload if provided - process in memory, no filesystem
+            logo_bytes = None
             if logo:
-                logo_dir = Path(settings.UPLOAD_DIR) / "logos"
-                logo_dir.mkdir(parents=True, exist_ok=True)
-
                 content = await logo.read()
 
                 # Check if the uploaded file is SVG
                 if logo.filename.lower().endswith('.svg'):
-                    # Convert SVG to PNG
-                    png_filename = f"{job_id}_logo.png"
-                    logo_path = logo_dir / png_filename
-
                     try:
-                        # Convert SVG to PNG using cairosvg
-                        png_data = cairosvg.svg2png(bytestring=content, output_width=400, output_height=200)
-
-                        # Save the PNG file
-                        with open(logo_path, "wb") as f:
-                            f.write(png_data)
-                        logger.info(f"SVG logo converted to PNG and saved to {logo_path}")
+                        # Convert SVG to PNG in memory using cairosvg
+                        logo_bytes = cairosvg.svg2png(bytestring=content, output_width=400, output_height=200)
+                        logger.info(f"SVG logo converted to PNG in memory for job {job_id}")
                     except Exception as e:
                         logger.error(f"Failed to convert SVG to PNG: {e}")
-                        # Fall back to saving original file
-                        logo_path = logo_dir / f"{job_id}_{logo.filename}"
-                        with open(logo_path, "wb") as f:
-                            f.write(content)
+                        # Use original content as fallback
+                        logo_bytes = content
                 else:
-                    # For non-SVG files, save as-is
-                    logo_path = logo_dir / f"{job_id}_{logo.filename}"
-                    with open(logo_path, "wb") as f:
-                        f.write(content)
-                    logger.info(f"Logo saved to {logo_path}")
+                    # For non-SVG files, use as-is
+                    logo_bytes = content
+                    logger.info(f"Logo processed in memory for job {job_id}")
 
-            # Generate the PDF
-            output_dir = Path(settings.PDF_OUTPUT_DIR) / "invoices"
-            output_dir.mkdir(parents=True, exist_ok=True)
-            output_path = output_dir / f"{job_id}.pdf"
+                # Store logo in GridFS for record keeping
+                gridfs = request.app.state.gridfs_storage
+                await gridfs.store_logo(
+                    file_data=logo_bytes,
+                    filename=logo.filename,
+                    job_id=job_id,
+                    content_type="image/png" if logo.filename.lower().endswith('.svg') else logo.content_type
+                )
 
+            # Generate the PDF to bytes (no filesystem)
             logger.info(f"Generating PDF for invoice {job_id}")
-            pdf_path = await pdf_service.generate_invoice_pdf(
+            pdf_bytes = await pdf_service.generate_invoice_pdf_bytes(
                 invoice_data=invoice_data,
-                output_path=output_path,
-                logo_path=logo_path
+                logo_bytes=logo_bytes
             )
 
-            logger.info(f"PDF generated successfully at {pdf_path}")
+            logger.info(f"PDF generated successfully ({len(pdf_bytes)} bytes)")
+
+            # Store PDF in GridFS
+            gridfs = request.app.state.gridfs_storage
+            pdf_file_id = await gridfs.store_pdf(
+                file_data=pdf_bytes,
+                job_id=job_id,
+                document_type=document_type,
+                metadata={
+                    "invoice_data": invoice_data,
+                    "user_ip": request.client.host if request.client else None
+                }
+            )
 
             # Log document generation to database
             await request.app.state.db.generation_jobs.insert_one({
@@ -552,6 +549,7 @@ async def generate_document(
                 "document_type": document_type,
                 "created_at": datetime.utcnow(),
                 "status": "completed",
+                "pdf_file_id": pdf_file_id,
                 "user_ip": request.client.host if request.client else None
             })
 
@@ -592,13 +590,25 @@ async def generate_document(
 
 
 @app.get("/generate/status/{job_id}", dependencies=[Depends(check_auth_or_frontend)])
-async def get_job_status(job_id: str):
+async def get_job_status(request: Request, job_id: str):
     """Get generation job status."""
-    # Check if the PDF exists
-    invoice_dir = Path(settings.PDF_OUTPUT_DIR) / "invoices"
-    pdf_path = invoice_dir / f"{job_id}.pdf"
+    # Check in database first
+    job = await request.app.state.db.generation_jobs.find_one({"job_id": job_id})
 
-    if pdf_path.exists():
+    if job and job.get("status") == "completed":
+        return {
+            "job_id": job_id,
+            "status": "completed",
+            "progress": 100,
+            "current_step": "completed",
+            "message": "Document ready for download"
+        }
+
+    # Check if PDF exists in GridFS
+    gridfs = request.app.state.gridfs_storage
+    file_info = await gridfs.get_file_info(job_id)
+
+    if file_info:
         return {
             "job_id": job_id,
             "status": "completed",
@@ -607,7 +617,6 @@ async def get_job_status(job_id: str):
             "message": "Document ready for download"
         }
     else:
-        # Check if there's a validation failure (no PDF generated)
         return {
             "job_id": job_id,
             "status": "failed",
@@ -619,53 +628,25 @@ async def get_job_status(job_id: str):
 
 
 @app.get("/generate/download/{job_id}", dependencies=[Depends(check_auth_or_frontend)])
-async def download_generated_document(job_id: str):
-    """Download generated document PDF."""
+async def download_generated_document(request: Request, job_id: str):
+    """Download generated document PDF from MongoDB GridFS."""
     try:
-        # Look for the PDF in the invoices directory
-        invoice_dir = Path(settings.PDF_OUTPUT_DIR) / "invoices"
-        pdf_path = invoice_dir / f"{job_id}.pdf"
+        # Fetch PDF from GridFS
+        gridfs = request.app.state.gridfs_storage
+        pdf_bytes = await gridfs.get_pdf(job_id)
 
-        if pdf_path.exists():
-            logger.info(f"Serving PDF: {pdf_path}")
-            return FileResponse(
-                path=str(pdf_path),
+        if pdf_bytes:
+            logger.info(f"Serving PDF from GridFS for job_id: {job_id} ({len(pdf_bytes)} bytes)")
+            return Response(
+                content=pdf_bytes,
                 media_type="application/pdf",
-                filename=f"{job_id}.pdf",
                 headers={
-                    "Content-Disposition": f"attachment; filename={job_id}.pdf"
+                    "Content-Disposition": f"attachment; filename={job_id}.pdf",
+                    "Content-Length": str(len(pdf_bytes))
                 }
             )
 
-        # Fallback: Try to find any matching PDF
-        matching_files = list(invoice_dir.glob(f"*{job_id}*.pdf"))
-        if matching_files:
-            pdf_path = matching_files[0]
-            logger.info(f"Serving matching PDF: {pdf_path}")
-            return FileResponse(
-                path=str(pdf_path),
-                media_type="application/pdf",
-                filename=pdf_path.name,
-                headers={
-                    "Content-Disposition": f"attachment; filename={pdf_path.name}"
-                }
-            )
-
-        # Try general documents directory
-        general_dir = Path(settings.PDF_OUTPUT_DIR)
-        pdf_path = general_dir / f"{job_id}.pdf"
-        if pdf_path.exists():
-            logger.info(f"Serving PDF from general dir: {pdf_path}")
-            return FileResponse(
-                path=str(pdf_path),
-                media_type="application/pdf",
-                filename=f"{job_id}.pdf",
-                headers={
-                    "Content-Disposition": f"attachment; filename={job_id}.pdf"
-                }
-            )
-
-        logger.error(f"PDF not found for job_id: {job_id}")
+        logger.error(f"PDF not found in GridFS for job_id: {job_id}")
         raise HTTPException(status_code=404, detail="Document not found")
 
     except HTTPException:

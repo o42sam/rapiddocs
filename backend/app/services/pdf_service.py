@@ -3,8 +3,9 @@ PDF Generation Service for creating professional invoices
 """
 import os
 import logging
+from io import BytesIO
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from datetime import datetime
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
@@ -12,6 +13,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from reportlab.lib.utils import ImageReader
 from PIL import Image as PILImage
 
 logger = logging.getLogger(__name__)
@@ -71,7 +73,7 @@ class PDFService:
         output_path: Path,
         logo_path: Optional[Path] = None
     ) -> Path:
-        """Generate a professional invoice PDF"""
+        """Generate a professional invoice PDF to file (legacy method)"""
 
         try:
             # Ensure output directory exists
@@ -117,6 +119,117 @@ class PDFService:
         except Exception as e:
             logger.error(f"Failed to generate PDF: {e}")
             raise
+
+    async def generate_invoice_pdf_bytes(
+        self,
+        invoice_data: Dict[str, Any],
+        logo_bytes: Optional[bytes] = None
+    ) -> bytes:
+        """
+        Generate a professional invoice PDF and return as bytes.
+        This method stores everything in memory, no filesystem access needed.
+
+        Args:
+            invoice_data: Invoice data dictionary
+            logo_bytes: Optional logo image as bytes
+
+        Returns:
+            PDF document as bytes
+        """
+        try:
+            # Create a BytesIO buffer for the PDF
+            buffer = BytesIO()
+
+            # Create the PDF document
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=letter,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=72
+            )
+
+            # Build the document content
+            story = []
+
+            # Add header with logo and invoice title
+            story.extend(self._create_header_from_bytes(invoice_data, logo_bytes))
+
+            # Add vendor and client information
+            story.append(self._create_addresses(invoice_data))
+            story.append(Spacer(1, 0.3 * inch))
+
+            # Add line items table
+            story.append(self._create_line_items_table(invoice_data))
+            story.append(Spacer(1, 0.3 * inch))
+
+            # Add totals
+            story.append(self._create_totals_table(invoice_data))
+            story.append(Spacer(1, 0.5 * inch))
+
+            # Add payment terms and notes
+            story.extend(self._create_footer(invoice_data))
+
+            # Build the PDF
+            doc.build(story)
+
+            # Get the PDF bytes
+            pdf_bytes = buffer.getvalue()
+            buffer.close()
+
+            logger.info(f"Invoice PDF generated successfully ({len(pdf_bytes)} bytes)")
+            return pdf_bytes
+
+        except Exception as e:
+            logger.error(f"Failed to generate PDF: {e}")
+            raise
+
+    def _create_header_from_bytes(self, invoice_data: Dict, logo_bytes: Optional[bytes]) -> list:
+        """Create the header section with logo from bytes and title"""
+        elements = []
+
+        # Create a table for the header layout
+        header_data = []
+        header_row = []
+
+        # Logo or company name
+        if logo_bytes:
+            try:
+                # Create an ImageReader from bytes
+                logo_buffer = BytesIO(logo_bytes)
+                img = Image(logo_buffer, width=2*inch, height=1*inch)
+                img.hAlign = 'LEFT'
+                header_row.append(img)
+            except Exception as e:
+                logger.warning(f"Failed to load logo from bytes: {e}")
+                header_row.append(Paragraph(invoice_data.get('vendor_name', 'Company'), self.styles['CompanyName']))
+        else:
+            header_row.append(Paragraph(invoice_data.get('vendor_name', 'Company'), self.styles['CompanyName']))
+
+        # Invoice title and number
+        invoice_info = f"""
+        <para align="right">
+        <b>INVOICE</b><br/>
+        <font size="10">#{invoice_data.get('invoice_number', 'INV-001')}</font><br/>
+        <font size="9">{datetime.now().strftime('%B %d, %Y')}</font>
+        </para>
+        """
+        header_row.append(Paragraph(invoice_info, self.styles['InvoiceDetails']))
+
+        header_data.append(header_row)
+
+        header_table = Table(header_data, colWidths=[4*inch, 2.5*inch])
+        header_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+
+        elements.append(header_table)
+        elements.append(Spacer(1, 0.3 * inch))
+
+        return elements
 
     def _create_header(self, invoice_data: Dict, logo_path: Optional[Path]) -> list:
         """Create the header section with logo and title"""
