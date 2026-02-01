@@ -81,7 +81,12 @@ app = FastAPI(
 )
 
 # CORS - Use settings or fallback to hardcoded
-cors_origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, 'CORS_ORIGINS') and settings.CORS_ORIGINS else [
+# Strip whitespace from each origin to avoid matching issues
+raw_origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, 'CORS_ORIGINS') and settings.CORS_ORIGINS else []
+cors_origins = [origin.strip() for origin in raw_origins] if raw_origins else []
+
+# Always include these origins
+default_origins = [
     "https://rapiddocs.io",
     "https://www.rapiddocs.io",
     "https://rapiddocs-9a3f8.web.app",
@@ -91,12 +96,21 @@ cors_origins = settings.CORS_ORIGINS.split(",") if hasattr(settings, 'CORS_ORIGI
     "http://localhost:5174"
 ]
 
+# Merge and deduplicate
+for origin in default_origins:
+    if origin not in cors_origins:
+        cors_origins.append(origin)
+
+logger.info(f"CORS origins configured: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 
 # Mount static files
