@@ -358,3 +358,298 @@ class GeminiService:
             return "Thank you for your business! We appreciate your continued partnership."
         else:
             return "Professional services delivered with excellence and attention to detail."
+
+    async def extract_formal_document_data(self, user_prompt: str) -> Dict[str, Any]:
+        """
+        Extract structured data from user prompt for formal document generation.
+        Extracts: title, topic, word count, tone, sections, etc.
+        """
+        if not self.model:
+            return self._get_fallback_formal_data(user_prompt)
+
+        system_prompt = """
+        You are an AI assistant that extracts structured data from user descriptions for formal document generation.
+
+        Given a user's description, extract document parameters and return as a valid JSON object:
+        {
+            "title": "string - document title",
+            "topic": "string - main topic/subject",
+            "word_count": number (target word count, default 500 if not specified),
+            "tone": "string - one of: professional, academic, legal, business, formal (default: professional)",
+            "sections": ["list of section titles/topics to cover"],
+            "author": "string - author/organization name if mentioned",
+            "date": "string - date if mentioned, else current date",
+            "summary": "string - brief 1-2 sentence summary of what the document should cover"
+        }
+
+        Parse carefully:
+        - If user mentions "X words" or "approximately X words", extract that as word_count
+        - If user mentions "brief" or "short", use word_count of 300-500
+        - If user mentions "detailed" or "comprehensive", use word_count of 1000-2000
+        - If user mentions "report", "analysis", "whitepaper", default to professional/business tone
+        - If user mentions "legal", "contract", "agreement", use legal tone
+        - If user mentions "academic", "research", "thesis", use academic tone
+
+        User prompt: """ + user_prompt + """
+
+        Return ONLY the JSON object, no additional text or markdown.
+        """
+
+        try:
+            response = self.model.generate_content(system_prompt)
+            text = response.text.strip()
+
+            # Clean up markdown if present
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+
+            data = json.loads(text)
+            return self._validate_formal_data(data, user_prompt)
+
+        except Exception as e:
+            logger.error(f"Gemini formal data extraction failed: {e}")
+            return self._get_fallback_formal_data(user_prompt)
+
+    async def generate_formal_document_content(self, document_data: Dict[str, Any]) -> str:
+        """
+        Generate the full text content for a formal document.
+        Uses numbers, letters, and roman numerals for enumeration (NO bullet points).
+        """
+        title = document_data.get("title", "Formal Document")
+        topic = document_data.get("topic", document_data.get("summary", ""))
+        word_count = document_data.get("word_count", 500)
+        tone = document_data.get("tone", "professional")
+        sections = document_data.get("sections", [])
+
+        if not self.model:
+            return self._get_fallback_formal_content(document_data)
+
+        sections_text = ""
+        if sections:
+            sections_text = f"\nCover these sections/topics: {', '.join(sections)}"
+
+        system_prompt = f"""
+        Generate a formal document with the following specifications:
+
+        Title: {title}
+        Topic/Subject: {topic}
+        Target word count: approximately {word_count} words
+        Tone: {tone}
+        {sections_text}
+
+        IMPORTANT FORMATTING RULES:
+        1. DO NOT use bullet points (•, -, *) for any enumeration
+        2. For lists and enumeration, use ONLY:
+           - Numbers (1, 2, 3, etc.) for main points
+           - Letters (a, b, c, etc.) for sub-points
+           - Roman numerals (i, ii, iii, etc.) for sub-sub-points
+        3. Use proper paragraph structure with clear topic sentences
+        4. Include an introduction and conclusion
+        5. Use formal language appropriate for {tone} documents
+        6. Do not use markdown formatting (no #, **, etc.)
+        7. Use proper spacing between paragraphs
+
+        Example of correct enumeration:
+        1. First main point
+           a. Sub-point under first main point
+           b. Another sub-point
+              i. Detail under sub-point
+              ii. Another detail
+        2. Second main point
+
+        Generate professional, well-structured content that reads naturally and flows logically.
+        The document should be substantive and informative, not generic filler text.
+        """
+
+        try:
+            response = self.model.generate_content(system_prompt)
+            content = response.text.strip()
+
+            # Clean up any markdown that might have slipped through
+            content = self._clean_formal_content(content)
+
+            return content
+
+        except Exception as e:
+            logger.error(f"Gemini formal content generation failed: {e}")
+            return self._get_fallback_formal_content(document_data)
+
+    def _validate_formal_data(self, data: Dict[str, Any], original_prompt: str) -> Dict[str, Any]:
+        """Validate and fill missing formal document data fields"""
+        import re
+        from datetime import datetime
+
+        # Extract word count from original prompt if not in data
+        word_count = data.get("word_count", 500)
+        word_match = re.search(r'(\d+)\s*words?', original_prompt.lower())
+        if word_match:
+            word_count = int(word_match.group(1))
+
+        # Validate word count bounds
+        word_count = max(100, min(word_count, 10000))
+
+        defaults = {
+            "title": data.get("title", "Formal Document"),
+            "topic": data.get("topic", original_prompt[:200] if len(original_prompt) > 200 else original_prompt),
+            "word_count": word_count,
+            "tone": data.get("tone", "professional"),
+            "sections": data.get("sections", []),
+            "author": data.get("author", ""),
+            "date": data.get("date", datetime.now().strftime("%B %d, %Y")),
+            "summary": data.get("summary", original_prompt[:300] if len(original_prompt) > 300 else original_prompt)
+        }
+
+        # Validate tone
+        valid_tones = ["professional", "academic", "legal", "business", "formal"]
+        if defaults["tone"].lower() not in valid_tones:
+            defaults["tone"] = "professional"
+
+        return defaults
+
+    def _get_fallback_formal_data(self, user_prompt: str) -> Dict[str, Any]:
+        """Generate fallback formal document data when Gemini is unavailable"""
+        import re
+        from datetime import datetime
+
+        # Try to extract word count
+        word_count = 500
+        word_match = re.search(r'(\d+)\s*words?', user_prompt.lower())
+        if word_match:
+            word_count = int(word_match.group(1))
+        elif "brief" in user_prompt.lower() or "short" in user_prompt.lower():
+            word_count = 300
+        elif "detailed" in user_prompt.lower() or "comprehensive" in user_prompt.lower():
+            word_count = 1500
+
+        # Determine tone from keywords
+        tone = "professional"
+        if any(word in user_prompt.lower() for word in ["legal", "contract", "agreement", "terms"]):
+            tone = "legal"
+        elif any(word in user_prompt.lower() for word in ["academic", "research", "thesis", "study"]):
+            tone = "academic"
+        elif any(word in user_prompt.lower() for word in ["business", "corporate", "company"]):
+            tone = "business"
+
+        # Try to extract a title
+        title = "Formal Document"
+        title_patterns = [
+            r'(?:titled?|about|regarding|on)\s+["\']?([^"\'\.]+)["\']?',
+            r'^([A-Z][^\.]{10,50})',
+        ]
+        for pattern in title_patterns:
+            match = re.search(pattern, user_prompt, re.IGNORECASE)
+            if match:
+                title = match.group(1).strip()[:100]
+                break
+
+        return {
+            "title": title,
+            "topic": user_prompt[:200] if len(user_prompt) > 200 else user_prompt,
+            "word_count": word_count,
+            "tone": tone,
+            "sections": [],
+            "author": "",
+            "date": datetime.now().strftime("%B %d, %Y"),
+            "summary": user_prompt[:300] if len(user_prompt) > 300 else user_prompt
+        }
+
+    def _get_fallback_formal_content(self, document_data: Dict[str, Any]) -> str:
+        """Generate fallback formal document content when Gemini is unavailable"""
+        title = document_data.get("title", "Document")
+        topic = document_data.get("topic", "")
+        word_count = document_data.get("word_count", 500)
+        tone = document_data.get("tone", "professional")
+
+        # Generate a structured fallback document
+        content = f"""{title}
+
+Introduction
+
+This document provides a comprehensive overview of {topic}. The following sections outline the key aspects, considerations, and recommendations relevant to this subject matter.
+
+1. Background and Context
+
+The subject of {topic} has gained significant attention in recent years. Understanding the fundamental aspects is essential for proper assessment and decision-making.
+
+   a. Historical Development
+   The evolution of this topic reflects broader trends in the field. Key milestones include initial recognition of the importance, subsequent research and development, and current state-of-the-art practices.
+
+   b. Current Relevance
+   In today's context, this subject matter holds particular significance due to:
+      i. Changing regulatory requirements
+      ii. Evolving best practices
+      iii. Increased stakeholder expectations
+
+2. Key Considerations
+
+Several factors merit careful attention when addressing this topic:
+
+   a. Primary Factors
+   The most critical elements include thorough analysis, stakeholder engagement, and strategic planning.
+
+   b. Secondary Factors
+   Supporting considerations encompass resource allocation, timeline management, and quality assurance.
+
+3. Recommendations
+
+Based on the analysis presented, the following recommendations are proposed:
+
+   a. Short-term Actions
+      i. Conduct comprehensive assessment
+      ii. Engage relevant stakeholders
+      iii. Develop implementation framework
+
+   b. Long-term Strategy
+      i. Establish monitoring mechanisms
+      ii. Plan for continuous improvement
+      iii. Document lessons learned
+
+4. Conclusion
+
+This document has outlined the essential aspects of {topic}. The recommendations provided offer a structured approach to addressing the relevant challenges and opportunities. Implementation should proceed with careful attention to the factors identified herein.
+
+The success of any initiative in this area depends on commitment to excellence, stakeholder collaboration, and adherence to established best practices. Continued attention to emerging developments will ensure sustained relevance and effectiveness.
+"""
+        return content
+
+    def _clean_formal_content(self, content: str) -> str:
+        """Clean up formal document content - remove markdown and bullet points"""
+        import re
+
+        # Remove markdown headers
+        content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+
+        # Remove bold/italic markdown
+        content = re.sub(r'\*\*([^*]+)\*\*', r'\1', content)
+        content = re.sub(r'\*([^*]+)\*', r'\1', content)
+        content = re.sub(r'__([^_]+)__', r'\1', content)
+        content = re.sub(r'_([^_]+)_', r'\1', content)
+
+        # Replace bullet points with numbered lists where possible
+        # This is a simple conversion - lines starting with - or * or •
+        lines = content.split('\n')
+        result_lines = []
+        list_counter = 1
+
+        for line in lines:
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+
+            # Check for bullet points
+            if stripped.startswith(('- ', '* ', '• ')):
+                # Replace with number
+                new_line = ' ' * indent + f"{list_counter}. " + stripped[2:]
+                result_lines.append(new_line)
+                list_counter += 1
+            else:
+                result_lines.append(line)
+                # Reset counter on non-list lines
+                if stripped and not stripped[0].isdigit():
+                    list_counter = 1
+
+        return '\n'.join(result_lines)

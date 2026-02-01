@@ -573,12 +573,98 @@ async def generate_document(
             }
 
         elif document_type == "formal":
-            # Placeholder for formal document generation
+            # Formal document generation
+            gemini_service = request.app.state.gemini_service
+            pdf_service = request.app.state.pdf_service
+
+            logger.info(f"Processing formal document generation for job {job_id}")
+            logger.info(f"User description: {description}")
+
+            # Extract document parameters from user prompt using Gemini
+            document_data = await gemini_service.extract_formal_document_data(description)
+            logger.info(f"Extracted document data: title='{document_data.get('title')}', word_count={document_data.get('word_count')}")
+
+            # Generate the document content using Gemini
+            logger.info(f"Generating formal document content...")
+            content = await gemini_service.generate_formal_document_content(document_data)
+            logger.info(f"Generated content: {len(content)} characters")
+
+            # Handle logo upload if provided - process in memory
+            logo_bytes = None
+            if logo:
+                logo_content = await logo.read()
+
+                # Convert SVG to PNG if needed
+                if logo.filename.lower().endswith('.svg'):
+                    try:
+                        logo_bytes = cairosvg.svg2png(bytestring=logo_content, output_width=400, output_height=200)
+                        logger.info(f"SVG logo converted to PNG in memory for job {job_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to convert SVG to PNG: {e}")
+                        logo_bytes = logo_content
+                else:
+                    logo_bytes = logo_content
+                    logger.info(f"Logo processed in memory for job {job_id}")
+
+                # Store logo in GridFS for record keeping
+                gridfs = request.app.state.gridfs_storage
+                await gridfs.store_logo(
+                    file_data=logo_bytes,
+                    filename=logo.filename,
+                    job_id=job_id,
+                    content_type="image/png" if logo.filename.lower().endswith('.svg') else logo.content_type
+                )
+
+            # Parse color scheme from design spec
+            color_scheme = None
+            if design and 'colors' in design:
+                color_scheme = design['colors']
+            elif design and 'color_scheme' in design:
+                color_scheme = design['color_scheme']
+
+            # Generate the formal document PDF
+            logger.info(f"Generating PDF for formal document {job_id}")
+            pdf_bytes = await pdf_service.generate_formal_document_pdf_bytes(
+                document_data=document_data,
+                content=content,
+                logo_bytes=logo_bytes,
+                color_scheme=color_scheme,
+                use_watermark=use_watermark,
+                edge_decorations=True
+            )
+
+            logger.info(f"Formal document PDF generated successfully ({len(pdf_bytes)} bytes)")
+
+            # Store PDF in GridFS
+            gridfs = request.app.state.gridfs_storage
+            pdf_file_id = await gridfs.store_pdf(
+                file_data=pdf_bytes,
+                job_id=job_id,
+                document_type=document_type,
+                metadata={
+                    "document_data": document_data,
+                    "content_length": len(content),
+                    "user_ip": request.client.host if request.client else None
+                }
+            )
+
+            # Log document generation to database
+            await request.app.state.db.generation_jobs.insert_one({
+                "job_id": job_id,
+                "document_type": document_type,
+                "created_at": datetime.utcnow(),
+                "status": "completed",
+                "pdf_file_id": pdf_file_id,
+                "document_data": document_data,
+                "user_ip": request.client.host if request.client else None
+            })
+
             return {
-                "job_id": f"FORMAL-{uuid.uuid4().hex[:8]}",
-                "status": "pending",
-                "message": "Formal document generation coming soon",
-                "document_type": "formal",
+                "job_id": job_id,
+                "status": "completed",
+                "message": "Formal document generated successfully",
+                "download_url": f"/generate/download/{job_id}",
+                "document_type": document_type,
                 "credits_used": 1
             }
         else:
