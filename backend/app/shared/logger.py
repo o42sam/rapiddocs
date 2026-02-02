@@ -39,19 +39,23 @@ def setup_logger(name: str, log_file: str = None, level=logging.INFO):
 
     # File handler (optional)
     if log_file:
-        # Create logs directory if it doesn't exist
-        log_path = Path(log_file)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            # Create logs directory if it doesn't exist
+            log_path = Path(log_file)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
 
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setLevel(level)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+        except (PermissionError, OSError) as e:
+            # If we can't write to the log file, just use console logging
+            print(f"Warning: Could not create log file {log_file}: {e}. Using console logging only.")
 
     return logger
 
 
-# Create default logger
+# Create default logger (file logging is optional, will fall back to console)
 default_logger = setup_logger(
     'docgen',
     log_file='logs/docgen.log'
@@ -69,5 +73,6 @@ def get_logger(name: str = None) -> logging.Logger:
         Logger instance
     """
     if name:
+        # Try to create file logger, will fall back to console if permission denied
         return setup_logger(name, log_file=f'logs/{name}.log')
     return default_logger

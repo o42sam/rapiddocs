@@ -79,9 +79,13 @@ elif [ ! -f ".env" ]; then
     exit 1
 fi
 
-# Step 3: Create necessary directories
+# Step 3: Create necessary directories with proper permissions
 log_info "Step 3: Creating necessary directories..."
 mkdir -p uploads/logos generated_pdfs logs
+
+# Fix permissions for mounted volumes (container runs as uid 1000)
+chown -R 1000:1000 uploads generated_pdfs logs 2>/dev/null || true
+chmod -R 755 uploads generated_pdfs logs
 
 # Step 4: Stop existing container
 log_info "Step 4: Stopping existing container (if any)..."
