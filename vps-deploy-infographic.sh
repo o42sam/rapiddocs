@@ -74,6 +74,11 @@ fi
 
 # Step 1: Pull latest changes
 log_info "Step 1: Pulling latest code from repository..."
+
+# Remove deployment scripts from repo directory if they exist as untracked (prevents merge conflict)
+# The script is downloaded separately to the parent directory, so the repo copy is redundant
+run_cmd "cd $PROJECT_DIR && rm -f vps-deploy-infographic.sh deploy-to-vps.sh 2>/dev/null || true"
+
 run_cmd "cd $PROJECT_DIR && git pull"
 
 # Step 2: Install new Python dependencies
