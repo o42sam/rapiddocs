@@ -8,10 +8,8 @@ services:
       - ./uploads:/app/uploads
       - ./generated_pdfs:/app/generated_pdfs
       - ./logs:/app/logs
-      - ./app/templates:/app/app/templates
-      - ./.env.production:/app/.env
+      - ./.env:/app/.env:ro
     environment:
-      - APP_ENV=production
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
     networks:
