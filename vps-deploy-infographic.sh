@@ -33,6 +33,12 @@ fi
 PROJECT_DIR="${VPS_PROJECT_DIR:-$DEFAULT_PROJECT_DIR}"
 BACKEND_DIR="${PROJECT_DIR}/backend"
 
+# Virtual environment directory (Kali requires venv for pip)
+VENV_DIR="${VPS_VENV_DIR:-/home/docgen/venv}"
+PIP_CMD="$VENV_DIR/bin/pip"
+PYTHON_CMD="$VENV_DIR/bin/python"
+UVICORN_CMD="$VENV_DIR/bin/uvicorn"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -56,6 +62,7 @@ if [ "$VPS_HOST" = "local" ] || [ "$VPS_HOST" = "localhost" ] || [ "$VPS_HOST" =
     LOCAL_MODE=true
     log_info "Running in LOCAL mode on this server"
     log_info "Project directory: $PROJECT_DIR"
+    log_info "Virtual environment: $VENV_DIR"
 
     # Function to run commands locally
     run_cmd() {
@@ -65,6 +72,7 @@ else
     LOCAL_MODE=false
     log_info "Running in REMOTE mode via SSH to $VPS_USER@$VPS_HOST"
     log_info "Project directory: $PROJECT_DIR"
+    log_info "Virtual environment: $VENV_DIR"
 
     # Function to run commands via SSH
     run_cmd() {
@@ -83,7 +91,14 @@ run_cmd "cd $PROJECT_DIR && git pull"
 
 # Step 2: Install new Python dependencies
 log_info "Step 2: Installing Python dependencies..."
-run_cmd "cd $BACKEND_DIR && pip install -r requirements.txt"
+
+# Ensure virtual environment exists
+if ! run_cmd "test -d $VENV_DIR"; then
+    log_info "Creating virtual environment at $VENV_DIR..."
+    run_cmd "python3 -m venv $VENV_DIR"
+fi
+
+run_cmd "cd $BACKEND_DIR && $PIP_CMD install -r requirements.txt"
 
 # Step 3: Create necessary directories
 log_info "Step 3: Creating necessary directories..."
@@ -102,13 +117,13 @@ else
     # Kill any existing uvicorn process
     run_cmd "pkill -f 'uvicorn app.main:app' || true"
     sleep 2
-    # Start in background
+    # Start in background using venv's uvicorn
     if [ "$LOCAL_MODE" = true ]; then
         cd $BACKEND_DIR
-        nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > /var/log/rapiddocs.log 2>&1 &
+        nohup $UVICORN_CMD app.main:app --host 0.0.0.0 --port 8000 > /var/log/rapiddocs.log 2>&1 &
         cd - > /dev/null
     else
-        run_cmd "cd $BACKEND_DIR && nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 > /var/log/rapiddocs.log 2>&1 &"
+        run_cmd "cd $BACKEND_DIR && nohup $UVICORN_CMD app.main:app --host 0.0.0.0 --port 8000 > /var/log/rapiddocs.log 2>&1 &"
     fi
     log_info "Started uvicorn server"
 fi
