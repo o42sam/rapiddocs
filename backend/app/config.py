@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     TEXT_GENERATION_MODEL: str = "meta-llama/Llama-3.2-3B-Instruct"
     IMAGE_GENERATION_MODEL: str = "black-forest-labs/FLUX.1-schnell"
 
+    # Google Gemini
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "models/gemini-2.0-flash"
+
     # File Storage
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 5242880  # 5MB

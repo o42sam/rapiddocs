@@ -3,20 +3,100 @@ Generation API Routes.
 Unified endpoint for all document generation types.
 """
 
+import os
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from typing import Optional, Dict, Any
 from pathlib import Path
 import json
-import logging
 
-from .invoice_routes import get_invoice_use_case, GenerateInvoiceUseCase, cleanup_temp_file
-from ...application.dto.invoice_request import InvoiceRequest
+# Import invoice use case (may fail if not yet implemented)
+try:
+    from .invoice_routes import get_invoice_use_case, GenerateInvoiceUseCase, cleanup_temp_file
+    from ...application.dto.invoice_request import InvoiceRequest
+    INVOICE_AVAILABLE = True
+except ImportError:
+    INVOICE_AVAILABLE = False
+
+# Import infographic use case
+from ...application.dto.infographic_request import InfographicRequest, StatisticDTO
+from ...application.use_cases.generate_infographic import GenerateInfographicUseCase
+from ...infrastructure.ai_providers.gemini_text_generator import GeminiTextGenerator
+from ...infrastructure.ai_providers.banana_image_generator import BananaImageGenerator
+from ...infrastructure.ai_providers.prompt_analyzer import PromptAnalyzer
+from ...infrastructure.visualization.matplotlib_engine import MatplotlibEngine
+from ...infrastructure.document_renderers.infographic_pdf_renderer import InfographicPDFRenderer
+from ...infrastructure.document_renderers.infographic_styles import get_style_preset
+from ...infrastructure.data_import.csv_importer import CSVImporter
+
 from ...config import settings
+from ...shared.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("generation_routes")
 
-router = APIRouter()
+# In-memory job storage (replace with database in production)
+_job_storage = {}
+
+router = APIRouter(prefix="/generate", tags=["Document Generation"])
+
+
+# Dependency injection functions for infographic generation
+def get_text_generator() -> GeminiTextGenerator:
+    """Dependency for text generator."""
+    return GeminiTextGenerator(
+        api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
+        model=os.getenv("GEMINI_MODEL", "models/gemini-2.0-flash")
+    )
+
+
+def get_image_generator() -> BananaImageGenerator:
+    """Dependency for image generator."""
+    return BananaImageGenerator(
+        api_key=os.getenv("HUGGINGFACE_API_KEY"),
+        model=os.getenv("IMAGE_GENERATION_MODEL", "black-forest-labs/FLUX.1-schnell")
+    )
+
+
+def get_visualization_engine() -> MatplotlibEngine:
+    """Dependency for visualization engine."""
+    return MatplotlibEngine()
+
+
+def get_document_renderer() -> InfographicPDFRenderer:
+    """Dependency for document renderer."""
+    return InfographicPDFRenderer()
+
+
+def get_prompt_analyzer(
+    text_generator: GeminiTextGenerator = Depends(get_text_generator)
+) -> PromptAnalyzer:
+    """Dependency for prompt analyzer."""
+    return PromptAnalyzer(text_generator)
+
+
+def get_csv_importer() -> CSVImporter:
+    """Dependency for CSV importer."""
+    return CSVImporter()
+
+
+def get_infographic_use_case(
+    text_generator: GeminiTextGenerator = Depends(get_text_generator),
+    image_generator: BananaImageGenerator = Depends(get_image_generator),
+    visualization_engine: MatplotlibEngine = Depends(get_visualization_engine),
+    document_renderer: InfographicPDFRenderer = Depends(get_document_renderer),
+    prompt_analyzer: PromptAnalyzer = Depends(get_prompt_analyzer),
+    csv_importer: CSVImporter = Depends(get_csv_importer)
+) -> GenerateInfographicUseCase:
+    """Dependency for the infographic generation use case."""
+    return GenerateInfographicUseCase(
+        text_generator=text_generator,
+        image_generator=image_generator,
+        visualization_engine=visualization_engine,
+        document_renderer=document_renderer,
+        prompt_analyzer=prompt_analyzer,
+        data_importer=csv_importer
+    )
 
 
 @router.post("/document")
@@ -29,7 +109,7 @@ async def generate_document(
     statistics: str = Form("[]"),
     design_spec: str = Form("{}"),
     logo: Optional[UploadFile] = File(None),
-    invoice_use_case: GenerateInvoiceUseCase = Depends(get_invoice_use_case)
+    infographic_use_case: GenerateInfographicUseCase = Depends(get_infographic_use_case)
 ):
     """
     Unified document generation endpoint.
@@ -46,76 +126,117 @@ async def generate_document(
 
         # Route based on document type
         if document_type == "invoice":
-            # Extract invoice-specific data from description or design spec
-            invoice_data = {
-                "invoice_number": design.get("invoice_number", f"INV-{Path.home().name}-001"),
-                "client_name": design.get("client_name", "Client Company"),
-                "vendor_name": design.get("vendor_name", "Your Company"),
-                "description": description,
-                "client_address": design.get("client_address", ""),
-                "vendor_address": design.get("vendor_address", ""),
-                "currency": design.get("currency", "USD"),
-                "payment_terms": design.get("payment_terms", "Net 30"),
-                "line_items": design.get("line_items", []),
-                "ai_generate_items": True,
-                "ai_generate_terms": True,
-                "ai_generate_notes": True
-            }
+            if not INVOICE_AVAILABLE:
+                raise HTTPException(
+                    status_code=501,
+                    detail="Invoice generation not yet implemented"
+                )
+            # Invoice generation logic (requires invoice_routes to be available)
+            raise HTTPException(
+                status_code=501,
+                detail="Invoice generation temporarily disabled. Use infographic type."
+            )
+
+        elif document_type == "infographic":
+            # Process infographic generation
+            job_id = str(uuid.uuid4())[:8]
+            logger.info(f"Processing infographic generation - Job ID: {job_id}")
+
+            # Convert statistics to DTOs
+            stat_dtos = []
+            for stat in stats:
+                if isinstance(stat, dict):
+                    stat_dtos.append(StatisticDTO(
+                        name=stat.get("name", "Statistic"),
+                        value=float(stat.get("value", 0)),
+                        unit=stat.get("unit", "units"),
+                        visualization_type=stat.get("visualization_type", "bar_chart"),
+                        category=stat.get("category"),
+                        description=stat.get("description")
+                    ))
+
+            # Extract color scheme from design spec and convert to hex colors
+            color_scheme_name = "professional"
+            if design:
+                primary_color = design.get("primary_color", "").lower()
+                if "green" in primary_color:
+                    color_scheme_name = "nature"
+                elif "purple" in primary_color:
+                    color_scheme_name = "modern"
+                elif "orange" in primary_color or "red" in primary_color:
+                    color_scheme_name = "warm"
+                elif "blue" in primary_color:
+                    color_scheme_name = "corporate"
+
+            # Convert color scheme name to hex colors using style presets
+            style_preset = get_style_preset(color_scheme_name)
+            color_scheme = [
+                style_preset.colors.primary,
+                style_preset.colors.secondary,
+                style_preset.colors.tertiary,
+                style_preset.colors.accent
+            ]
 
             # Process logo if provided
             logo_path = None
             if logo:
                 logo_dir = Path(settings.UPLOAD_DIR) / "logos"
                 logo_dir.mkdir(parents=True, exist_ok=True)
-                logo_path = logo_dir / logo.filename
-
+                logo_path = logo_dir / f"{job_id}_{logo.filename}"
                 content = await logo.read()
                 with open(logo_path, "wb") as f:
                     f.write(content)
+                logo_path = str(logo_path)
 
-            # Create InvoiceRequest object
-            invoice_request = InvoiceRequest(
-                invoice_number=invoice_data["invoice_number"],
-                client_name=invoice_data["client_name"],
-                vendor_name=invoice_data["vendor_name"],
-                client_address=invoice_data.get("client_address", ""),
-                vendor_address=invoice_data.get("vendor_address", ""),
-                line_items=invoice_data.get("line_items", []),
-                currency=invoice_data.get("currency", "USD"),
-                custom_terms=invoice_data.get("payment_terms", ""),
-                custom_notes="",
-                ai_generate_items=invoice_data.get("ai_generate_items", True),
-                ai_generate_terms=invoice_data.get("ai_generate_terms", True),
-                ai_generate_notes=invoice_data.get("ai_generate_notes", True),
-                logo_path=str(logo_path) if logo_path else None,
-                output_format="pdf"
+            # Create infographic request DTO
+            dto = InfographicRequest(
+                title="",  # Will be extracted from prompt
+                topic=description,
+                statistics=stat_dtos,
+                num_sections=max(3, length // 200),  # Estimate sections from length
+                num_images=max(2, length // 300),    # Estimate images from length
+                color_scheme=color_scheme,
+                logo_path=logo_path,
+                output_format="pdf",
+                include_cover_page=True
             )
 
-            # Generate invoice
-            result = await invoice_use_case.execute(invoice_request)
-
-            # Clean up temp files
-            if logo_path:
-                background_tasks.add_task(cleanup_temp_file, logo_path)
-
-            # Format response to match frontend expectations
-            return {
-                "job_id": result.job_id,
-                "status": result.status,
-                "message": result.message,
-                "download_url": result.download_url.replace("/invoice/", "/generate/"),
-                "document_type": "invoice",
-                "credits_used": 1
+            # Store job status
+            _job_storage[job_id] = {
+                "status": "processing",
+                "progress": 0,
+                "message": "Starting infographic generation..."
             }
 
-        elif document_type == "infographic":
-            # Placeholder for infographic generation
-            return {
-                "job_id": "INFOGRAPHIC-001",
-                "status": "pending",
-                "message": "Infographic generation coming soon",
-                "document_type": "infographic"
-            }
+            try:
+                # Execute generation
+                output_path = await infographic_use_case.execute(dto)
+
+                # Update job status
+                _job_storage[job_id] = {
+                    "status": "completed",
+                    "progress": 100,
+                    "message": "Generation complete",
+                    "file_path": str(output_path)
+                }
+
+                return {
+                    "job_id": job_id,
+                    "status": "completed",
+                    "message": "Infographic document generated successfully",
+                    "download_url": f"{settings.API_PREFIX}/generate/download/{job_id}",
+                    "document_type": "infographic",
+                    "credits_used": 1
+                }
+
+            except Exception as e:
+                _job_storage[job_id] = {
+                    "status": "failed",
+                    "progress": 0,
+                    "message": str(e),
+                    "error": str(e)
+                }
+                raise
 
         elif document_type == "formal":
             # Placeholder for formal document generation
@@ -138,8 +259,19 @@ async def generate_document(
 async def get_job_status(job_id: str):
     """
     Get generation job status.
-    For now, returns completed for all jobs.
+    Checks in-memory job storage first, then returns default completed status.
     """
+    if job_id in _job_storage:
+        job = _job_storage[job_id]
+        return {
+            "job_id": job_id,
+            "status": job.get("status", "unknown"),
+            "progress": job.get("progress", 0),
+            "message": job.get("message"),
+            "file_path": job.get("file_path"),
+            "error": job.get("error")
+        }
+
     return {
         "job_id": job_id,
         "status": "completed",
@@ -154,16 +286,32 @@ async def download_generated_document(job_id: str):
     Download generated document by job ID.
     """
     try:
-        # For invoices, job_id is the invoice number
-        invoice_dir = Path(settings.PDF_OUTPUT_DIR) / "invoices"
+        # Check job storage first
+        if job_id in _job_storage:
+            job = _job_storage[job_id]
+            if job.get("status") != "completed":
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Job not completed. Status: {job.get('status')}"
+                )
+            file_path = job.get("file_path")
+            if file_path and Path(file_path).exists():
+                return FileResponse(
+                    path=file_path,
+                    media_type="application/pdf",
+                    filename=Path(file_path).name
+                )
 
-        # Find matching files
-        matching_files = list(invoice_dir.glob(f"*{job_id}*.pdf"))
+        # Fallback: search in PDF output directories
+        # Try infographic directory first
+        doc_dir = Path(settings.PDF_OUTPUT_DIR)
+        matching_files = list(doc_dir.glob(f"*{job_id}*.pdf"))
 
         if not matching_files:
-            # Try general documents directory
-            doc_dir = Path(settings.PDF_OUTPUT_DIR)
-            matching_files = list(doc_dir.glob(f"*{job_id}*.pdf"))
+            # Try invoices subdirectory
+            invoice_dir = doc_dir / "invoices"
+            if invoice_dir.exists():
+                matching_files = list(invoice_dir.glob(f"*{job_id}*.pdf"))
 
         if not matching_files:
             raise HTTPException(status_code=404, detail="Document not found")
@@ -176,6 +324,8 @@ async def download_generated_document(job_id: str):
             filename=file_path.name
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to download document: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

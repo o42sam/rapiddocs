@@ -7,8 +7,8 @@ import os
 
 from app.config import settings
 # from app.database import connect_to_mongo, close_mongo_connection
-# Routes will be added once presentation layer is complete
-# from app.presentation.routes import invoice_routes, infographic_routes, formal_routes
+# Routes
+from app.presentation.routes import infographic_routes, generation_routes
 import asyncio
 
 # Debug: Print environment variables at startup
@@ -73,6 +73,8 @@ if os.path.exists(settings.PDF_OUTPUT_DIR):
     app.mount("/pdfs", StaticFiles(directory=settings.PDF_OUTPUT_DIR), name="pdfs")
 
 # Include routers
+app.include_router(infographic_routes.router, prefix=settings.API_PREFIX)
+app.include_router(generation_routes.router, prefix=settings.API_PREFIX)
 # app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["authentication"])
 # app.include_router(admin.router, prefix=f"{settings.API_PREFIX}/admin", tags=["admin"])
 # app.include_router(credits.router, prefix=f"{settings.API_PREFIX}/credits", tags=["credits"])
