@@ -17,11 +17,15 @@ VPS_USER="${VPS_USER:-root}"
 VPS_HOST="${VPS_HOST:-local}"
 SERVICE_NAME="${SERVICE_NAME:-rapiddocs}"
 
-# Auto-detect project directory
-if [ -d "/home/docgen" ]; then
+# Auto-detect project directory (must have .git)
+if [ -d "/home/docgen/rapiddocs/.git" ]; then
+    DEFAULT_PROJECT_DIR="/home/docgen/rapiddocs"
+elif [ -d "/home/docgen/.git" ]; then
     DEFAULT_PROJECT_DIR="/home/docgen"
-elif [ -d "/var/www/rapiddocs" ]; then
+elif [ -d "/var/www/rapiddocs/.git" ]; then
     DEFAULT_PROJECT_DIR="/var/www/rapiddocs"
+elif [ -d ".git" ]; then
+    DEFAULT_PROJECT_DIR="$(pwd)"
 else
     DEFAULT_PROJECT_DIR="$(pwd)"
 fi
