@@ -638,13 +638,16 @@ export class GeneratePage {
         and implementation timeline. Use a professional, persuasive tone targeting C-level executives."
       `,
       infographic: `
-        <strong>Focus on visual themes and data:</strong> Describe the main topic and visual style you want.
-        Mention specific concepts that should be illustrated with images.
-        Be clear about what data points should be visualized as charts.
+        <strong>Describe your topic, data, and visuals:</strong> Our AI automatically extracts statistics,
+        selects optimal chart types (bar, line, pie, gauge), generates relevant images, and structures your document.
+        Include specific numbers/percentages for automatic visualization.
         <br><br>
-        <strong>Example:</strong> "Create a marketing infographic about sustainable energy solutions.
-        Show images of solar panels and wind turbines. Include charts comparing renewable vs traditional energy costs,
-        and visualize our 40% carbon reduction achievement. Use clean, modern visuals with eco-friendly themes."
+        <strong>Example:</strong> "Create a quarterly business performance report for Q4 2024.
+        Include statistics: revenue grew 35% to $2.4M, customer satisfaction at 92%, new users increased by 12,000 (up 28%),
+        and market share reached 18%. Show a pie chart of revenue by region (North America 45%, Europe 30%, Asia 25%).
+        Generate images of a modern office workspace, team collaboration, and data analytics dashboard.
+        Use a professional tone with sections covering financial highlights, customer metrics, growth initiatives, and 2025 outlook.
+        Color theme: corporate blue and green."
       `,
       invoice: `
         <strong>Provide complete transaction details:</strong> Include vendor (your business) name and full address,
