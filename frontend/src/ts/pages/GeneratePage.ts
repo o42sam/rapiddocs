@@ -642,7 +642,7 @@ export class GeneratePage {
         selects optimal chart types (bar, line, pie, gauge), generates relevant images, and structures your document.
         Include specific numbers/percentages for automatic visualization.
         <br><br>
-        <strong>Example:</strong> "Create a quarterly business performance report for Q4 2024.
+        <strong>Example:</strong> "Create a quarterly business performance report for Q4 2024, approximately 800 words.
         Include statistics: revenue grew 35% to $2.4M, customer satisfaction at 92%, new users increased by 12,000 (up 28%),
         and market share reached 18%. Show a pie chart of revenue by region (North America 45%, Europe 30%, Asia 25%).
         Generate images of a modern office workspace, team collaboration, and data analytics dashboard.
