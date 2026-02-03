@@ -8,7 +8,7 @@ import os
 from app.config import settings
 # from app.database import connect_to_mongo, close_mongo_connection
 # Routes
-from app.presentation.routes import infographic_routes, generation_routes
+from app.presentation.routes import infographic_routes, generation_routes, credits_routes
 import asyncio
 
 # Debug: Print environment variables at startup
@@ -75,9 +75,9 @@ if os.path.exists(settings.PDF_OUTPUT_DIR):
 # Include routers
 app.include_router(infographic_routes.router, prefix=settings.API_PREFIX)
 app.include_router(generation_routes.router, prefix=settings.API_PREFIX)
+app.include_router(credits_routes.router, prefix=f"{settings.API_PREFIX}/credits", tags=["credits"])
 # app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["authentication"])
 # app.include_router(admin.router, prefix=f"{settings.API_PREFIX}/admin", tags=["admin"])
-# app.include_router(credits.router, prefix=f"{settings.API_PREFIX}/credits", tags=["credits"])
 # app.include_router(bitcoin.router, prefix=f"{settings.API_PREFIX}/bitcoin", tags=["bitcoin-payments"])
 # app.include_router(paystack.router, prefix=settings.API_PREFIX, tags=["paystack-payments"])
 # app.include_router(documents.router, prefix=settings.API_PREFIX, tags=["documents"])
