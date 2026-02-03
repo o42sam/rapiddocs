@@ -45,16 +45,16 @@ router = APIRouter(prefix="/generate", tags=["Document Generation"])
 def get_text_generator() -> GeminiTextGenerator:
     """Dependency for text generator."""
     return GeminiTextGenerator(
-        api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
-        model=os.getenv("GEMINI_MODEL", "models/gemini-2.0-flash")
+        api_key=settings.GEMINI_API_KEY,
+        model=settings.GEMINI_MODEL
     )
 
 
 def get_image_generator() -> BananaImageGenerator:
     """Dependency for image generator."""
     return BananaImageGenerator(
-        api_key=os.getenv("HUGGINGFACE_API_KEY"),
-        model=os.getenv("IMAGE_GENERATION_MODEL", "black-forest-labs/FLUX.1-schnell")
+        api_key=settings.HUGGINGFACE_API_KEY,
+        model=settings.IMAGE_GENERATION_MODEL
     )
 
 
