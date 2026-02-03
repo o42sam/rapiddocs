@@ -73,6 +73,11 @@ cd "$BACKEND_DIR"
 if [ -f ".env.production" ]; then
     cp .env.production .env
     log_info "Copied .env.production to .env"
+
+    # Fix paths for Docker container (volumes are mounted at /app/*)
+    sed -i 's|UPLOAD_DIR=/home/docgen/uploads|UPLOAD_DIR=/app/uploads|g' .env
+    sed -i 's|PDF_OUTPUT_DIR=/home/docgen/generated_pdfs|PDF_OUTPUT_DIR=/app/generated_pdfs|g' .env
+    log_info "Updated paths for Docker container"
 elif [ ! -f ".env" ]; then
     log_error ".env file not found and no .env.production to copy from!"
     log_error "Please create a .env file with the required configuration"
