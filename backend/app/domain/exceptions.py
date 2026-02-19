@@ -93,3 +93,8 @@ class EntityExistsException(DomainException):
 class TokenException(DomainException):
     """Exception raised for token-related errors."""
     pass
+
+
+class RepositoryException(DomainException):
+    """Exception raised for repository/persistence errors."""
+    pass

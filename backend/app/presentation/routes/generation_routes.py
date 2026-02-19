@@ -131,11 +131,76 @@ async def generate_document(
                     status_code=501,
                     detail="Invoice generation not yet implemented"
                 )
-            # Invoice generation logic (requires invoice_routes to be available)
-            raise HTTPException(
-                status_code=501,
-                detail="Invoice generation temporarily disabled. Use infographic type."
-            )
+
+            # Build invoice use case via dependency
+            invoice_use_case = get_invoice_use_case()
+            job_id = str(uuid.uuid4())[:8]
+            logger.info(f"Processing invoice generation - Job ID: {job_id}")
+
+            _job_storage[job_id] = {
+                "status": "processing",
+                "progress": 0,
+                "message": "Starting invoice generation..."
+            }
+
+            # Process logo if provided
+            logo_path = None
+            if logo:
+                logo_dir = Path(settings.UPLOAD_DIR) / "logos"
+                logo_dir.mkdir(parents=True, exist_ok=True)
+                logo_path = logo_dir / f"{job_id}_{logo.filename}"
+                content = await logo.read()
+                with open(logo_path, "wb") as f:
+                    f.write(content)
+
+            # Build invoice data from the unified form fields
+            invoice_data = {
+                "invoice_number": f"INV-{job_id.upper()}",
+                "client_name": design.get("client_name", "Client"),
+                "client_address": design.get("client_address", ""),
+                "vendor_name": design.get("vendor_name", ""),
+                "vendor_address": design.get("vendor_address", ""),
+                "currency": design.get("currency", "USD"),
+                "payment_terms": design.get("payment_terms", "Net 30"),
+                "description": description,
+                "line_items": design.get("line_items", []),
+                "ai_generate_items": True,
+                "ai_generate_terms": True,
+                "ai_generate_notes": True,
+            }
+
+            try:
+                result = await invoice_use_case.execute(
+                    invoice_data=invoice_data,
+                    logo_path=Path(logo_path) if logo_path else None,
+                    import_file_path=None,
+                    output_dir=Path(settings.PDF_OUTPUT_DIR) / "invoices"
+                )
+
+                file_path = result.get("file_path", "")
+                _job_storage[job_id] = {
+                    "status": "completed",
+                    "progress": 100,
+                    "message": "Generation complete",
+                    "file_path": file_path
+                }
+
+                return {
+                    "job_id": job_id,
+                    "status": "completed",
+                    "message": "Invoice document generated successfully",
+                    "download_url": f"{settings.API_PREFIX}/generate/download/{job_id}",
+                    "document_type": "invoice",
+                    "credits_used": 1
+                }
+            except Exception as e:
+                _job_storage[job_id] = {
+                    "status": "failed",
+                    "progress": 0,
+                    "message": str(e),
+                    "error": str(e)
+                }
+                raise
 
         elif document_type == "infographic":
             # Process infographic generation
