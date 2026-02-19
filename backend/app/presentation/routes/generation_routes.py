@@ -208,11 +208,13 @@ async def generate_document(
             try:
                 result = await invoice_use_case.execute(invoice_request)
 
+                # The use case writes to /tmp/invoice_{document_id}.pdf
+                invoice_file = Path(f"/tmp/invoice_{result.document_id}.pdf")
                 _job_storage[job_id] = {
                     "status": "completed",
                     "progress": 100,
                     "message": "Generation complete",
-                    "file_path": result.download_url
+                    "file_path": str(invoice_file)
                 }
 
                 return {
