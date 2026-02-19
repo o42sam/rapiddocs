@@ -13,8 +13,12 @@ import json
 
 # Import invoice use case (may fail if not yet implemented)
 try:
-    from .invoice_routes import get_invoice_use_case, GenerateInvoiceUseCase, cleanup_temp_file
-    from ...application.dto.invoice_request import InvoiceRequest
+    from ...application.use_cases.generate_invoice import GenerateInvoiceUseCase
+    from ...application.dto.invoice_request import InvoiceRequest, InvoiceLineItemDTO
+    from ...infrastructure.ai_providers.huggingface_text_generator import HuggingFaceTextGenerator
+    from ...infrastructure.document_renderers.invoice_pdf_renderer import InvoicePDFRenderer
+    from ...infrastructure.tables.reportlab_tables import ReportLabTableGenerator
+    from ...infrastructure.persistence.mongodb_document_repository import MongoDBDocumentRepository
     INVOICE_AVAILABLE = True
 except ImportError:
     INVOICE_AVAILABLE = False
@@ -132,8 +136,21 @@ async def generate_document(
                     detail="Invoice generation not yet implemented"
                 )
 
-            # Build invoice use case via dependency
-            invoice_use_case = get_invoice_use_case()
+            # Build invoice use case
+            inv_text_gen = HuggingFaceTextGenerator(
+                api_key=settings.HUGGINGFACE_API_KEY,
+                model=settings.TEXT_GENERATION_MODEL
+            )
+            inv_table_gen = ReportLabTableGenerator()
+            inv_renderer = InvoicePDFRenderer(inv_table_gen)
+            inv_repo = MongoDBDocumentRepository()
+            invoice_use_case = GenerateInvoiceUseCase(
+                text_generator=inv_text_gen,
+                image_generator=None,
+                document_renderer=inv_renderer,
+                table_generator=inv_table_gen,
+                document_repository=inv_repo,
+            )
             job_id = str(uuid.uuid4())[:8]
             logger.info(f"Processing invoice generation - Job ID: {job_id}")
 
@@ -153,36 +170,49 @@ async def generate_document(
                 with open(logo_path, "wb") as f:
                     f.write(content)
 
-            # Build invoice data from the unified form fields
-            invoice_data = {
-                "invoice_number": f"INV-{job_id.upper()}",
-                "client_name": design.get("client_name", "Client"),
-                "client_address": design.get("client_address", ""),
-                "vendor_name": design.get("vendor_name", ""),
-                "vendor_address": design.get("vendor_address", ""),
-                "currency": design.get("currency", "USD"),
-                "payment_terms": design.get("payment_terms", "Net 30"),
-                "description": description,
-                "line_items": design.get("line_items", []),
-                "ai_generate_items": True,
-                "ai_generate_terms": True,
-                "ai_generate_notes": True,
-            }
+            # Build line item DTOs from design spec
+            line_item_dtos = []
+            for item in design.get("line_items", []):
+                if isinstance(item, dict):
+                    line_item_dtos.append(InvoiceLineItemDTO(
+                        description=item.get("description", ""),
+                        quantity=int(item.get("quantity", 1)),
+                        unit_price=float(item.get("unit_price", 0)),
+                        tax_rate=float(item.get("tax_rate", 0))
+                    ))
+
+            # If no line items provided, create a default from the description
+            if not line_item_dtos:
+                line_item_dtos.append(InvoiceLineItemDTO(
+                    description=description[:100],
+                    quantity=1,
+                    unit_price=0.0,
+                    tax_rate=0.0
+                ))
+
+            # Build InvoiceRequest DTO
+            invoice_request = InvoiceRequest(
+                invoice_number=f"INV-{job_id.upper()}",
+                client_name=design.get("client_name", "") or "Client",
+                client_address=design.get("client_address", ""),
+                vendor_name=design.get("vendor_name", "") or "Company",
+                vendor_address=design.get("vendor_address", ""),
+                line_items=line_item_dtos,
+                currency=design.get("currency", "USD"),
+                logo_path=str(logo_path) if logo_path else None,
+                ai_generate_terms=True,
+                ai_generate_notes=True,
+                custom_terms=design.get("payment_terms"),
+            )
 
             try:
-                result = await invoice_use_case.execute(
-                    invoice_data=invoice_data,
-                    logo_path=Path(logo_path) if logo_path else None,
-                    import_file_path=None,
-                    output_dir=Path(settings.PDF_OUTPUT_DIR) / "invoices"
-                )
+                result = await invoice_use_case.execute(invoice_request)
 
-                file_path = result.get("file_path", "")
                 _job_storage[job_id] = {
                     "status": "completed",
                     "progress": 100,
                     "message": "Generation complete",
-                    "file_path": file_path
+                    "file_path": result.download_url
                 }
 
                 return {

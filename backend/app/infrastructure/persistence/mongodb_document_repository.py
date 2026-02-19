@@ -34,7 +34,10 @@ class MongoDBDocumentRepository(IDocumentRepository):
     async def _get_collection(self):
         """Get documents collection."""
         if not self._db:
-            self._db = get_database()
+            try:
+                self._db = get_database()
+            except Exception:
+                return None
         return self._db[self._collection_name] if self._db else None
 
     async def save_document(
@@ -104,14 +107,14 @@ class MongoDBDocumentRepository(IDocumentRepository):
             logger.error(f"Failed to get document: {e}")
             raise RepositoryException(f"Failed to get document: {str(e)}")
 
-    async def get_user_documents(
+    async def list_documents(
         self,
         user_id: str,
-        limit: int = 10,
+        limit: int = 100,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
         """
-        Get documents by user ID.
+        List documents for a user.
 
         Args:
             user_id: User ID
@@ -135,8 +138,8 @@ class MongoDBDocumentRepository(IDocumentRepository):
             return documents
 
         except PyMongoError as e:
-            logger.error(f"Failed to get user documents: {e}")
-            raise RepositoryException(f"Failed to get user documents: {str(e)}")
+            logger.error(f"Failed to list documents: {e}")
+            raise RepositoryException(f"Failed to list documents: {str(e)}")
 
     async def update_document_status(
         self,

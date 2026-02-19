@@ -49,6 +49,52 @@ class InvoicePDFRenderer:
             "border": colors.Color(0.85, 0.85, 0.85)
         }
 
+    async def render(self, content: Dict[str, Any], output_path: Path, format: str = "pdf") -> Path:
+        """
+        Render invoice document (IDocumentRenderer-compatible interface).
+
+        Args:
+            content: Dict with 'invoice' (Invoice entity or dict), 'logo_path', etc.
+            output_path: Path where the PDF will be saved
+            format: Output format (only 'pdf' supported)
+
+        Returns:
+            Path to the generated PDF
+        """
+        invoice_data = content.get("invoice")
+        # If it's a dict (from to_dict()), reconstruct the Invoice entity
+        if isinstance(invoice_data, dict):
+            from ...domain.entities.invoice import Invoice, LineItem
+            from decimal import Decimal
+            invoice = Invoice(
+                invoice_number=invoice_data.get("invoice_number", ""),
+                client_name=invoice_data.get("client_name", ""),
+                client_address=invoice_data.get("client_address", ""),
+                vendor_name=invoice_data.get("vendor_name", ""),
+                vendor_address=invoice_data.get("vendor_address", ""),
+                line_items=[],
+                currency=invoice_data.get("currency", "USD"),
+            )
+            for item in invoice_data.get("line_items", []):
+                invoice.add_line_item(
+                    description=item.get("description", ""),
+                    quantity=item.get("quantity", 1),
+                    unit_price=Decimal(str(item.get("unit_price", 0))),
+                    tax_rate=Decimal(str(item.get("tax_rate", 0))),
+                )
+            if invoice_data.get("payment_terms"):
+                invoice.payment_terms = invoice_data["payment_terms"]
+            if invoice_data.get("notes"):
+                invoice.notes = invoice_data["notes"]
+        else:
+            invoice = invoice_data
+
+        logo_path = content.get("logo_path")
+        if logo_path:
+            logo_path = Path(logo_path)
+        ai_content = content.get("ai_generated_content")
+        return self.render_invoice(invoice, output_path, logo_path, ai_content)
+
     def render_invoice(
         self,
         invoice: Invoice,
@@ -333,8 +379,8 @@ class InvoicePDFRenderer:
         payment_text = ""
         if ai_content and "payment_instructions" in ai_content:
             payment_text = ai_content["payment_instructions"]
-        elif invoice.payment_instructions:
-            payment_text = invoice.payment_instructions
+        elif getattr(invoice, 'payment_instructions', None) or invoice.payment_terms:
+            payment_text = getattr(invoice, 'payment_instructions', None) or invoice.payment_terms
 
         if payment_text:
             # Word wrap payment instructions
@@ -344,14 +390,17 @@ class InvoicePDFRenderer:
                 info_y -= 15
         else:
             # Default payment info
-            if invoice.bank_account_number:
-                c.drawString(left_margin, info_y, f"Account #:    {invoice.bank_account_number}")
+            bank_account_number = getattr(invoice, 'bank_account_number', None)
+            if bank_account_number:
+                c.drawString(left_margin, info_y, f"Account #:    {bank_account_number}")
                 info_y -= 15
-            if invoice.bank_account_name:
-                c.drawString(left_margin, info_y, f"A/C Name:     {invoice.bank_account_name}")
+            bank_account_name = getattr(invoice, 'bank_account_name', None)
+            if bank_account_name:
+                c.drawString(left_margin, info_y, f"A/C Name:     {bank_account_name}")
                 info_y -= 15
-            if invoice.bank_details:
-                c.drawString(left_margin, info_y, f"Bank Details:  {invoice.bank_details}")
+            bank_details = getattr(invoice, 'bank_details', None)
+            if bank_details:
+                c.drawString(left_margin, info_y, f"Bank Details:  {bank_details}")
                 info_y -= 15
 
         return start_y - 70
@@ -377,7 +426,7 @@ class InvoicePDFRenderer:
         terms_text = ""
         if ai_content and "terms_and_conditions" in ai_content:
             terms_text = ai_content["terms_and_conditions"]
-        elif invoice.terms_and_conditions:
+        elif getattr(invoice, 'terms_and_conditions', None):
             terms_text = invoice.terms_and_conditions
         elif invoice.payment_terms:
             terms_text = invoice.payment_terms

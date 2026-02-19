@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -89,6 +89,27 @@ app.include_router(credits_routes.router, prefix=f"{settings.API_PREFIX}/credits
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.post(f"{settings.API_PREFIX}/validate/invoice")
+async def validate_invoice_prompt(description: str = Form(...)):
+    """Validate if the user prompt has enough information for invoice generation."""
+    missing_fields = []
+    desc_lower = description.lower()
+
+    # Check for key invoice fields mentioned in the prompt
+    if not any(word in desc_lower for word in ["client", "customer", "bill to", "recipient"]):
+        missing_fields.append("client_name")
+    if not any(word in desc_lower for word in ["company", "vendor", "from", "business", "seller"]):
+        missing_fields.append("vendor_name")
+    if not any(char.isdigit() for char in description):
+        missing_fields.append("line_items")
+
+    return {
+        "is_complete": len(missing_fields) == 0,
+        "missing_fields": missing_fields,
+        "message": "Invoice data validation complete"
+    }
 
 
 # Serve frontend static files
