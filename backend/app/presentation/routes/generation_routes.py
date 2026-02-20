@@ -19,6 +19,7 @@ try:
     from ...infrastructure.document_renderers.invoice_pdf_renderer import InvoicePDFRenderer
     from ...infrastructure.tables.reportlab_tables import ReportLabTableGenerator
     from ...infrastructure.persistence.mongodb_document_repository import MongoDBDocumentRepository
+    from ...infrastructure.ai_providers.invoice_prompt_analyzer import InvoicePromptAnalyzer
     INVOICE_AVAILABLE = True
 except ImportError:
     INVOICE_AVAILABLE = False
@@ -160,6 +161,15 @@ async def generate_document(
                 "message": "Starting invoice generation..."
             }
 
+            # Use AI to extract invoice data from the user's prompt
+            gemini_gen = GeminiTextGenerator(
+                api_key=settings.GEMINI_API_KEY,
+                model=settings.GEMINI_MODEL
+            )
+            invoice_analyzer = InvoicePromptAnalyzer(gemini_gen)
+            extracted = await invoice_analyzer.analyze(description)
+            logger.info(f"AI extracted invoice data: vendor={extracted.vendor_name}, client={extracted.client_name}, items={len(extracted.line_items)}")
+
             # Process logo if provided
             logo_path = None
             if logo:
@@ -170,39 +180,45 @@ async def generate_document(
                 with open(logo_path, "wb") as f:
                     f.write(content)
 
-            # Build line item DTOs from design spec
+            # Build line item DTOs: design_spec overrides take priority, then AI-extracted
             line_item_dtos = []
-            for item in design.get("line_items", []):
-                if isinstance(item, dict):
+            if design.get("line_items"):
+                for item in design["line_items"]:
+                    if isinstance(item, dict):
+                        line_item_dtos.append(InvoiceLineItemDTO(
+                            description=item.get("description", ""),
+                            quantity=int(item.get("quantity", 1)),
+                            unit_price=float(item.get("unit_price", 0)),
+                            tax_rate=float(item.get("tax_rate", 0))
+                        ))
+
+            # Use AI-extracted line items if none provided via design_spec
+            if not line_item_dtos:
+                for item in extracted.line_items:
                     line_item_dtos.append(InvoiceLineItemDTO(
-                        description=item.get("description", ""),
-                        quantity=int(item.get("quantity", 1)),
-                        unit_price=float(item.get("unit_price", 0)),
-                        tax_rate=float(item.get("tax_rate", 0))
+                        description=item.description,
+                        quantity=int(item.quantity),
+                        unit_price=item.unit_price,
+                        tax_rate=item.tax_rate
                     ))
 
-            # If no line items provided, create a default from the description
-            if not line_item_dtos:
-                line_item_dtos.append(InvoiceLineItemDTO(
-                    description=description[:100],
-                    quantity=1,
-                    unit_price=0.0,
-                    tax_rate=0.0
-                ))
-
-            # Build InvoiceRequest DTO
+            # Build InvoiceRequest DTO - design_spec fields override AI-extracted values
+            # Only use AI generation for terms/notes if we don't have real extracted data
+            custom_terms = design.get("payment_terms") or extracted.payment_terms
+            custom_notes = design.get("notes") or extracted.notes
             invoice_request = InvoiceRequest(
                 invoice_number=f"INV-{job_id.upper()}",
-                client_name=design.get("client_name", "") or "Client",
-                client_address=design.get("client_address", ""),
-                vendor_name=design.get("vendor_name", "") or "Company",
-                vendor_address=design.get("vendor_address", ""),
+                client_name=design.get("client_name") or extracted.client_name,
+                client_address=design.get("client_address") or extracted.client_address,
+                vendor_name=design.get("vendor_name") or extracted.vendor_name,
+                vendor_address=design.get("vendor_address") or extracted.vendor_address,
                 line_items=line_item_dtos,
-                currency=design.get("currency", "USD"),
+                currency=design.get("currency") or extracted.currency,
                 logo_path=str(logo_path) if logo_path else None,
-                ai_generate_terms=True,
-                ai_generate_notes=True,
-                custom_terms=design.get("payment_terms"),
+                ai_generate_terms=not bool(custom_terms),
+                ai_generate_notes=not bool(custom_notes),
+                custom_terms=custom_terms,
+                custom_notes=custom_notes,
             )
 
             try:

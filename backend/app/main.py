@@ -94,20 +94,41 @@ async def health_check():
 @app.post(f"{settings.API_PREFIX}/validate/invoice")
 async def validate_invoice_prompt(description: str = Form(...)):
     """Validate if the user prompt has enough information for invoice generation."""
-    missing_fields = []
-    desc_lower = description.lower()
+    from app.infrastructure.ai_providers.gemini_text_generator import GeminiTextGenerator
+    from app.infrastructure.ai_providers.invoice_prompt_analyzer import (
+        InvoicePromptAnalyzer, PLACEHOLDER_VENDORS, PLACEHOLDER_CLIENTS
+    )
 
-    # Check for key invoice fields mentioned in the prompt
-    if not any(word in desc_lower for word in ["client", "customer", "bill to", "recipient"]):
-        missing_fields.append("client_name")
-    if not any(word in desc_lower for word in ["company", "vendor", "from", "business", "seller"]):
+    gemini_gen = GeminiTextGenerator(
+        api_key=settings.GEMINI_API_KEY,
+        model=settings.GEMINI_MODEL
+    )
+    analyzer = InvoicePromptAnalyzer(gemini_gen)
+    extracted = await analyzer.analyze(description)
+
+    missing_fields = []
+
+    if extracted.vendor_name in PLACEHOLDER_VENDORS:
         missing_fields.append("vendor_name")
-    if not any(char.isdigit() for char in description):
-        missing_fields.append("line_items")
+    if extracted.client_name in PLACEHOLDER_CLIENTS:
+        missing_fields.append("client_name")
+
+    # Check if line items are all defaults (no real data extracted)
+    default_descriptions = {"Professional Services", "Consultation Hours"}
+    if all(item.description in default_descriptions for item in extracted.line_items):
+        # Only flag if the prompt has no numbers at all (likely no real items)
+        if not any(char.isdigit() for char in description):
+            missing_fields.append("line_items")
 
     return {
         "is_complete": len(missing_fields) == 0,
         "missing_fields": missing_fields,
+        "extracted_preview": {
+            "vendor_name": extracted.vendor_name,
+            "client_name": extracted.client_name,
+            "line_items_count": len(extracted.line_items),
+            "currency": extracted.currency,
+        },
         "message": "Invoice data validation complete"
     }
 

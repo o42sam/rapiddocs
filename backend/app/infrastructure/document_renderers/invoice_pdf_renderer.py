@@ -327,10 +327,13 @@ class InvoicePDFRenderer:
         start_y: float
     ) -> float:
         """Draw the summary section with totals."""
-        # Thank you message on the left
+        # Thank you message / notes on the left
         c.setFont("Helvetica-Oblique", 10)
         c.setFillColor(self.colors["light_gray"])
-        c.drawString(left_margin, start_y, "Thank you for your business")
+        notes_text = invoice.notes if invoice.notes else "Thank you for your business"
+        notes_lines = self._word_wrap(notes_text, 45)
+        for i, line in enumerate(notes_lines[:2]):
+            c.drawString(left_margin, start_y - (i * 14), line)
 
         # Summary table on the right
         subtotal = float(invoice.subtotal)
